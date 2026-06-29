@@ -51,18 +51,18 @@ def triplet_loss(anchors, positives, negatives, margin=0.2):
 
 
 
-def generate_balanced_pairs(labels, style_labels, neutral=0, mode="all", seed=42):
+def generate_balanced_pairs(speaker_labels, style_labels, neutral=0, mode="all", seed=42):
     random.seed(seed)
 
     label_to_indices = {}
-    for idx, label_idx in enumerate(labels):
-        label_to_indices.setdefault(label_idx, []).append(idx)
+    for idx, speaker_label_idx in enumerate(speaker_labels):
+        label_to_indices.setdefault(speaker_label_idx, []).append(idx)
 
     pairs = []
-    num_samples = len(labels)
+    num_samples = len(speaker_labels)
 
     for i in range(num_samples):
-        label_i = labels[i]
+        label_i = speaker_labels[i]
         style_i = style_labels[i]
 
         # Positive pairs (same speaker)
@@ -79,7 +79,7 @@ def generate_balanced_pairs(labels, style_labels, neutral=0, mode="all", seed=42
 
         def style_match(i_style, j_style):
             if mode == "neutral-neutral":
-                return i_style == neutral and j_style == neutral
+                return i_style == j_style == neutral
             elif mode == "whisper-whisper":
                 return i_style != neutral and j_style != neutral
             elif mode == "neutral-whisper":
@@ -106,7 +106,6 @@ def compute_eer(embeddings, labels, pairs):
         embeddings = F.normalize(embeddings, p=2, dim=1)
         labels = np.array(labels)
 
-        num_samples = len(embeddings)
 
         for i, j in pairs:
             dis = 1 - F.cosine_similarity(embeddings[i].unsqueeze(0), embeddings[j].unsqueeze(0)).item()

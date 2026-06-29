@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import hydra
 from hydra.core.config_store import ConfigStore
 from configs.config_classes import Config
-from training import train_epoch
+from training import train_model
 
 cs = ConfigStore.instance()
 cs.store(name="base_cfg", node=Config)
@@ -22,7 +22,7 @@ def main(cfg: Config):
     whsp_path = cfg.data.whsp_path
     train_ratio = cfg.data.split_ratio
     batch_size = cfg.training.batch_size
-    
+
 
 
     
@@ -32,7 +32,7 @@ def main(cfg: Config):
     # test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
 
     train_dataset = ChainsDataset(solo_path, whsp_path, train_speakers)
-    test_dataset = ChainsDataset(solo_path, whsp_path, test_speakers)
+    test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
 
     train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
@@ -43,7 +43,8 @@ def main(cfg: Config):
     {"params": model.parameters(), "lr": 1e-4},
     {"params": speaker_head.parameters(), "lr": 1e-3} 
 ])
-    print(train_epoch(train_loader, model, speaker_head, optimizer, 0.1, device))
+    
+    train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], 5, device)
 
 
 

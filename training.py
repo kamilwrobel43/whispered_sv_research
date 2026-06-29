@@ -50,5 +50,5 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
             print(f"{mode}: EER = {eer:.4f}")
 
         print("_"*100)
-    
+            
 
