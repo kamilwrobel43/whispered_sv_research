@@ -4,6 +4,7 @@ import os
 import numpy as np
 from sklearn.metrics import roc_curve
 import torch.nn.functional as F
+from tqdm import tqdm
 
 
 def split_speakers(root_dir='', train_ratio=0.7, seed=43):
@@ -138,3 +139,23 @@ def compute_eer(embeddings, labels, pairs):
 
         return eer, eer_threshold
 
+
+def test_sv(test_loader, model, mode, seed, device = torch.device("cuda" if torch.cuda.is_available else "cpu")):
+    all_embeddings = []
+    all_speaker_labels = []
+    all_style_labels = []
+    with torch.no_grad():
+        for feats, label, style_label in tqdm(test_loader, desc="Testing"):
+            feats, label, style_label = feats.to(device), label.to(device), style_label.to(device)
+
+            emb = model(feats)
+            all_embeddings.append(emb.cpu())
+            all_speaker_labels.extend(label.cpu().numpy())
+            all_style_labels.extend(style_label.cpu().numpy())
+
+    # Stack all results
+    all_embeddings = torch.cat(all_embeddings)
+
+    pairs = generate_balanced_pairs(all_speaker_labels, all_style_labels, neutral=0, mode=mode, seed=seed)
+    eer, threshold = compute_eer(all_embeddings, all_speaker_labels, pairs)
+    return eer
