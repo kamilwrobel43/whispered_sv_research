@@ -38,9 +38,11 @@ def main(cfg: Config):
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
 
     model = SVModel().to(device)
+    for param in model.parameters():
+        param.requires_grad = False
     speaker_head = AAMSoftmax(emb_dim=192, n_speakers=len(train_speakers), scale=30.0, margin=0.2).to(device)
     optimizer = torch.optim.AdamW([
-    {"params": model.parameters(), "lr": 1e-4},
+    {"params": filter(lambda p: p.requires_grad, model.parameters()), "lr": 1e-4},
     {"params": speaker_head.parameters(), "lr": 1e-3} 
 ])
     

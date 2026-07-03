@@ -3,7 +3,7 @@ import os
 from torch.utils.data import Dataset
 import torchaudio
 from sklearn.utils import shuffle
-
+import soundfile as sf
 seed = 43
 
 class ChainsDatasetSV(Dataset):
@@ -36,7 +36,7 @@ class ChainsDatasetSV(Dataset):
         return len(self.file_paths)
 
     def __load_file__(self, path):
-        import soundfile as sf
+
         speech, sr = sf.read(path)
         waveform = torch.from_numpy(speech).float()
         if waveform.ndim == 1:
