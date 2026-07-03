@@ -1,7 +1,9 @@
 data:
   root_path: "/home/kamil/Datasets/chains"
+<<<<<<< Updated upstream
   solo_path: "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
   whsp_path: "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
+=======
   split_ratio: 0.6
 
 model:
