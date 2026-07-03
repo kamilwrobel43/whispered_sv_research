@@ -36,10 +36,16 @@ class ChainsDatasetSV(Dataset):
         return len(self.file_paths)
 
     def __load_file__(self, path):
-        waveform, sr = torchaudio.load(path)
+        import soundfile as sf
+        speech, sr = sf.read(path)
+        waveform = torch.from_numpy(speech).float()
+        if waveform.ndim == 1:
+            waveform = waveform.unsqueeze(0)
+        else:
+            waveform = waveform.t()
         # Sample to desired target rate
         if sr != self.target_sr:
-            waveform = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.target_sr)(waveform)
+            waveform = torchaudio.functional.resample(waveform, orig_freq=sr, new_freq=self.target_sr)
         # Convert to mono
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
@@ -93,10 +99,16 @@ class ChainsDataset(Dataset):
         return len(self.file_paths_solo)
 
     def __load_file__(self, path):
-        waveform, sr = torchaudio.load(path)
+        import soundfile as sf
+        speech, sr = sf.read(path)
+        waveform = torch.from_numpy(speech).float()
+        if waveform.ndim == 1:
+            waveform = waveform.unsqueeze(0)
+        else:
+            waveform = waveform.t()
         # Sample to desired target rate
         if sr != self.target_sr:
-            waveform = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.target_sr)(waveform)
+            waveform = torchaudio.functional.resample(waveform, orig_freq=sr, new_freq=self.target_sr)
         # Convert to mono
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)

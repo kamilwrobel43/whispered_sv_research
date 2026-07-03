@@ -55,7 +55,7 @@ class AAMSoftmax(nn.Module):
         self.cos_m = math.cos(margin)
         self.sin_m = math.sin(margin)
 
-        self.threshold = math.cos(math.pi - margin)
+        self.th = math.cos(math.pi - margin)
         self.mm = math.sin(math.pi - margin) * margin
 
     def forward(self, x, labels):
