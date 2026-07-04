@@ -58,9 +58,14 @@ def main(cfg: Config):
 
     #train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], epochs, wandb_project, wandb_config, device)
     with open("eval.txt", "w") as f: 
-        for mode in ["neutral-neutral", "whisper-whisper", "all"]:
-            eer = test_sv(test_loader, model, mode, 43, device)
-            f.write(f"/n {mode}: {eer}")
+        for seed in [43, 33, 30, 20]:
+            train_speakers, test_speakers = split_speakers(root_dir = solo_path, train_ratio=train_ratio, seed=seed)
+            test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
+            test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
+            f.write(f"SEED: {seed}")
+            for mode in ["neutral-neutral", "whisper-whisper", "all"]:
+                eer = test_sv(test_loader, model, mode, 43, device)
+                f.write(f"{mode}: {(eer*100):.2f}% | ")
 
 
 
