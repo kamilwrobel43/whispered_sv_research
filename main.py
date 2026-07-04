@@ -59,10 +59,10 @@ def main(cfg: Config):
     #train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], epochs, wandb_project, wandb_config, device)
     with open("eval.txt", "w") as f: 
         for mode in ["neutral-neutral", "whisper-whisper", "all"]:
-            eer = test_sv(test_loader, model, mode)
+            eer = test_sv(test_loader, model, mode, 43, device)
             f.write(f"/n {mode}: {eer}")
 
-            
+
 
 
 if __name__ == "__main__":
