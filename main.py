@@ -7,21 +7,30 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from configs.config_classes import Config
 from training import train_model
+import wandb
+
 
 cs = ConfigStore.instance()
 cs.store(name="base_cfg", node=Config)
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: Config):
-    device = torch.device("cpu")
+
+
+    device = torch.device("cuda" if torch.cuda.is_available else "cpu")
     # root_solo = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
     # root_whsp = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/whsp/"
 
-    root_path = cfg.data.root_path
     solo_path = cfg.data.solo_path
     whsp_path = cfg.data.whsp_path
     train_ratio = cfg.data.split_ratio
     batch_size = cfg.training.batch_size
+    epochs = cfg.training.epochs
+
+    wandb.login()
+    wandb_project = cfg.wandb.project_name
+    wandb_config = {"epochs": epochs}
+    
 
 
 
@@ -46,7 +55,7 @@ def main(cfg: Config):
     {"params": speaker_head.parameters(), "lr": 1e-3} 
 ])
     
-    train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], 5, device)
+    train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], epochs, wandb_project, wandb_config, device)
 
 
 

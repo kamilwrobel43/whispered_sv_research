@@ -4,6 +4,11 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from utils import sample_triplets, triplet_loss, test_sv
 from tqdm import tqdm
+import wandb
+
+
+
+
 
 
 def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, device = torch.device("cuda" if torch.cuda.is_available else "cpu")):
@@ -34,21 +39,18 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
 
 
 
-def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, device = torch.device("cuda" if torch.cuda.is_available else "cpu")):
+def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, device = torch.device("cuda" if torch.cuda.is_available else "cpu")):
     speaker_head.train()
-    for epoch in range(n_epochs):
+    with wandb.init(project=wandb_project_name, config=wandb_config) as run:
+        for epoch in range(1, n_epochs+1):
 
-        model.train()
-        train_loss, train_loss_trip, train_loss_ce = train_epoch(train_loader, model, speaker_head, optimizer, gamma, device)
+            model.train()
+            train_loss, train_loss_trip, train_loss_ce = train_epoch(train_loader, model, speaker_head, optimizer, gamma, device)
+            run.log({"train_loss": {train_loss}, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce})
+            model.eval()
+            for mode in eval_modes:
+                eer = test_sv(test_loader, model, mode, 43, device)
+                run.log({f"{mode}_eval_eer": eer})
 
-        print(f"Epoch: {epoch+1}/{n_epochs} Train: LOSS = {train_loss:.4f} | LOSS_TRIP = {train_loss_trip:.4f} | LOSS_CE = {train_loss_ce:.4f}")
-
-        model.eval()
-        print("EVALUATION:")
-        for mode in eval_modes:
-            eer = test_sv(test_loader, model, mode, 43, device)
-            print(f"{mode}: EER = {eer:.4f}")
-
-        print("_"*100)
             
 

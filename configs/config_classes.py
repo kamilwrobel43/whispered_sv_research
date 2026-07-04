@@ -3,7 +3,6 @@ from typing import Optional
 
 @dataclass
 class DataConfig:
-    root_path: str = ""
     solo_path: str = ""
     whsp_path: str = ""
     split_ratio: float = 0.6
@@ -20,7 +19,12 @@ class ModelConfig:
     name: str = "default_model"
 
 @dataclass
+class WandbConfig:
+    project_name: str = "whispered_sv"
+
+@dataclass
 class Config:
     data: DataConfig = field(default_factory=DataConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
+    wandb: WandbConfig = field(default_factory=WandbConfig)
