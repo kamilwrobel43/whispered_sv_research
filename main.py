@@ -62,7 +62,7 @@ def main(cfg: Config):
             train_speakers, test_speakers = split_speakers(root_dir = solo_path, train_ratio=train_ratio, seed=seed)
             test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
             test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
-            f.write(f"SEED: {seed}")
+            f.write(f"SEED: {seed}, {test_speakers}")
             for mode in ["neutral-neutral", "whisper-whisper", "all"]:
                 eer = test_sv(test_loader, model, mode, seed, device)
                 f.write(f"{mode}: {(eer*100):.2f}% | ")
