@@ -76,8 +76,24 @@ class AAMSoftmax(nn.Module):
         logits = output * self.scale
         
         return logits
+    
 
-        
+
+
+
+class CosineSoftmax(nn.Module):
+    def __init__(self, emb_dim, n_speakers=1000, scale=30.0):
+        super().__init__()
+        self.emb_dim = emb_dim
+        self.weight = nn.Parameter(torch.empty(n_speakers, emb_dim, dtype=torch.float32))
+        nn.init.xavier_uniform_(self.weight)
+        self.scale = scale
+
+    def forward(self, x):
+        w = F.normalize(self.fc.weight, dim=1)
+        x = F.normalize(x, dim = 1)
+        logits = self.scale * (x @ w.t())
+        return logits
 
 
 

@@ -46,7 +46,7 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
 
             model.train()
             train_loss, train_loss_trip, train_loss_ce = train_epoch(train_loader, model, speaker_head, optimizer, gamma, device)
-            run.log({"train_loss": {train_loss}, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce})
+            run.log({"train_loss": train_loss, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce})
             model.eval()
             for mode in eval_modes:
                 eer = test_sv(test_loader, model, mode, 43, device)
