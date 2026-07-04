@@ -31,9 +31,9 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
 
         curr_batch_size = len(label)
         total_samples += curr_batch_size
-        total_loss += loss.item() * curr_batch_size
-        total_loss_trip += loss_trip.item() * curr_batch_size
-        total_loss_ce += loss_ce.item() * curr_batch_size
+        total_loss += loss.item()
+        total_loss_trip += loss_trip.item()
+        total_loss_ce += loss_ce.item()
 
     return total_loss / total_samples, total_loss_trip / total_samples, total_loss_ce / total_samples
 
