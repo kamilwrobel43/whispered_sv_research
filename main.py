@@ -57,6 +57,7 @@ def main(cfg: Config):
     
 
     #train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], epochs, wandb_project, wandb_config, device)
+    model.eval()
     with open("eval.txt", "w") as f: 
         for seed in [43, 33, 30, 20]:
             train_speakers, test_speakers = split_speakers(root_dir = solo_path, train_ratio=train_ratio, seed=seed)
