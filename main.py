@@ -64,7 +64,7 @@ def main(cfg: Config):
             test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
             f.write(f"SEED: {seed}")
             for mode in ["neutral-neutral", "whisper-whisper", "all"]:
-                eer = test_sv(test_loader, model, mode, 43, device)
+                eer = test_sv(test_loader, model, mode, seed, device)
                 f.write(f"{mode}: {(eer*100):.2f}% | ")
 
 
