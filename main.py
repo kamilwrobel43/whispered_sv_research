@@ -1,6 +1,6 @@
 from dataset import ChainsDatasetSV, ChainsDataset
 from utils import split_speakers, test_sv
-from model import SVModel, AAMSoftmax
+from model import SVModel, AAMSoftmax, SVDummyModel
 import torch
 from torch.utils.data import DataLoader
 import hydra
@@ -18,8 +18,9 @@ def main(cfg: Config):
 
 
     device = torch.device("cuda" if torch.cuda.is_available else "cpu")
-    # root_solo = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
-    # root_whsp = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/whsp/"
+    # device = torch.device("cpu")
+    # solo_path = "/home/kamil/Datasets/chains/solo"
+    # whsp_path = "/home/kamil/Datasets/chains/whsp"
 
     solo_path = cfg.data.solo_path
     whsp_path = cfg.data.whsp_path
@@ -27,7 +28,7 @@ def main(cfg: Config):
     batch_size = cfg.training.batch_size
     epochs = cfg.training.epochs
 
-    wandb.login()
+    #wandb.login()
     wandb_project = cfg.wandb.project_name
     wandb_config = {"epochs": epochs}
     
@@ -57,10 +58,12 @@ def main(cfg: Config):
     
 
     #train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], epochs, wandb_project, wandb_config, device)
+    model = SVDummyModel(192).to(device)
     model.eval()
     with open("eval.txt", "w") as f: 
         for seed in [43, 33, 30, 20]:
             train_speakers, test_speakers = split_speakers(root_dir = solo_path, train_ratio=train_ratio, seed=seed)
+            print("test speakers:", len(test_speakers))
             test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
             test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
             f.write(f"SEED: {seed}, {test_speakers}")

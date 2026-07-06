@@ -139,7 +139,7 @@ def compute_eer(embeddings, labels, pairs):
         return eer, eer_threshold
 
 
-def test_sv(test_loader, model, mode, seed, device = torch.device("cuda" if torch.cuda.is_available else "cpu")):
+def test_sv(test_loader, model, mode, seed, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
     all_embeddings = []
     all_speaker_labels = []
     all_style_labels = []
@@ -156,5 +156,8 @@ def test_sv(test_loader, model, mode, seed, device = torch.device("cuda" if torc
     all_embeddings = torch.cat(all_embeddings)
 
     pairs = generate_balanced_pairs(all_speaker_labels, all_style_labels, neutral=0, mode=mode, seed=seed)
+    print("mode:", mode, "| total pairs:", len(pairs),
+        "| pos:", sum(1 for i,j in pairs if all_speaker_labels[i]==all_speaker_labels[j]),
+        "| neg:", sum(1 for i,j in pairs if all_speaker_labels[i]!=all_speaker_labels[j]))
     eer, threshold = compute_eer(all_embeddings, all_speaker_labels, pairs)
     return eer

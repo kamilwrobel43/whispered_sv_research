@@ -35,7 +35,14 @@ class SVModel(nn.Module):
         
         return self.encoder(x)
 
+class SVDummyModel(nn.Module):
+    def __init__(self, emb_dim):
+        super().__init__()
+        self.emb_dim = emb_dim
 
+    def forward(self, x):
+        bs = x.size(0)
+        return torch.rand((bs, self.emb_dim))
 
 
 
