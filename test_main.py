@@ -40,7 +40,7 @@ eer_nw = []
 eer_nn = []
 eer_ww = []
 eer_aa = []
-f = open("test2.txt", "w")
+f = open("magda.txt", "w")
 # Loop through all seeds
 for q in range(len(seeds)):
     seed = seeds[q]
@@ -52,9 +52,7 @@ for q in range(len(seeds)):
     torch.cuda.empty_cache()
 
     train_speakers, test_speakers = split_speakers(root_dir = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/", train_ratio=0.6, seed=seed)
-    f.write("Train_speakers: ", train_speakers, "\tTest_speakers: ", test_speakers)
-
-    n_speakers = len(train_speakers)
+    f.write(f"NUM TEST SPEAKERS: {len(test_speakers)}")
     
     model = torch.hub.load(
         "IDRnD/ReDimNet",
