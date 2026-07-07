@@ -20,20 +20,13 @@ import math
 from utils import *
 from dataset import ChainsDatasetSV
 import pandas as pd
+from model import SVModel
 
 
 
 batch_size = 128
-num_epochs = 100
-save_interval = 50
-dropout_v = 0.3
-lr_main = 1e-4
-lr_head = 1e-4
-lr_ecapa = 1e-5
-gamma = 1e-4
-aug = 0.5
 
-seeds = [43, 33, 30, 20]
+seeds = [43]
 
 
 eer_nw = []
@@ -42,35 +35,19 @@ eer_ww = []
 eer_aa = []
 f = open("magda.txt", "w")
 # Loop through all seeds
-for q in range(len(seeds)):
-    seed = seeds[q]
-    print("################################################################################################################")
-    f.write("seed: ", seed)
-
-
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    torch.cuda.empty_cache()
-
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = SVModel().to(device)
+model.eval()
+for seed in seeds:
+    f.write(f"seed:  {seed} \n")
     train_speakers, test_speakers = split_speakers(root_dir = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/", train_ratio=0.6, seed=seed)
-    f.write(f"NUM TEST SPEAKERS: {len(test_speakers)}")
-    
-    model = torch.hub.load(
-        "IDRnD/ReDimNet",
-        "ReDimNet",
-        model_name="b6",
-        train_type="ft_lm",
-        dataset="vox2"
-    ).to(device)
-
-    # -----------------------------------------------------------------------------------------------
-    # Speaker verification testing
-
+    f.write(f"NUM TEST SPEAKERS: {len(test_speakers)} \n")
     test_dataset = ChainsDatasetSV(root_solo="/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/", root_whsp="/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/whsp/", speaker_dirs=test_speakers)
-    f.write("\nTesting dataset: ", len(test_dataset))
-
+    f.write(f"\nTesting dataset: {len(test_dataset)}")
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    f.write(f"TEST SPEAKERS:  {test_speakers} \n")
 
-    model.eval()
+    
     # Final testing Normal vs. Whispered
     eer = test_sv(test_loader=test_loader, model=model, mode="neutral-whisper", seed=seed)
     eer_nw.append(eer)

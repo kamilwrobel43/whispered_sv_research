@@ -29,29 +29,30 @@ def main(cfg: Config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = SVModel().to(device)
     model.eval()
-    with open("kamil.txt", "w") as f: 
-        for seed in [43, 33, 30, 20]:
-            _, test_speakers = split_speakers(root_dir = solo_path, train_ratio=split_ratio, seed=seed)
-            f.write(f"NUM TEST SPEAKERS: {len(test_speakers)} \n")
-            test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
-            test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
-            f.write(f"SEED: {seed}, {test_speakers} \n")
-            
-            # Final testing Normal vs. Whispered
-            eer = test_sv(test_loader=test_loader, model=model, mode="neutral-whisper", seed=seed)
-            eer_nw.append(eer)
+    f = open("kamil.txt", "w")
+    for seed in [43]:
+        f.write(f"seed:  {seed} \n")
+        _, test_speakers = split_speakers(root_dir = solo_path, train_ratio=split_ratio, seed=seed)
+        f.write(f"NUM TEST SPEAKERS: {len(test_speakers)} \n")
+        test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
+        test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
+        f.write(f"TEST SPEAKERS:  {test_speakers} \n")
+        
+        # Final testing Normal vs. Whispered
+        eer = test_sv(test_loader=test_loader, model=model, mode="neutral-whisper", seed=seed)
+        eer_nw.append(eer)
 
-            # Final testing Normal vs. Normal
-            eer = test_sv(test_loader=test_loader, model=model, mode="neutral-neutral", seed=seed)
-            eer_nn.append(eer)
+        # Final testing Normal vs. Normal
+        eer = test_sv(test_loader=test_loader, model=model, mode="neutral-neutral", seed=seed)
+        eer_nn.append(eer)
 
-            # Final testing Whispred vs. Whipsered
-            eer = test_sv(test_loader=test_loader, model=model, mode="whisper-whisper", seed=seed)
-            eer_ww.append(eer)
+        # Final testing Whispred vs. Whipsered
+        eer = test_sv(test_loader=test_loader, model=model, mode="whisper-whisper", seed=seed)
+        eer_ww.append(eer)
 
-            # Final testing All vs. All
-            eer = test_sv(test_loader=test_loader, model=model, mode="all", seed=seed)
-            eer_aa.append(eer)
+        # Final testing All vs. All
+        eer = test_sv(test_loader=test_loader, model=model, mode="all", seed=seed)
+        eer_aa.append(eer)
 
         f.write("#############################  RESULTS  ##############################")
         dict = {'NORMAL VS. WHSP': eer_nw,
