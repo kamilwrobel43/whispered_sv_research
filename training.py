@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from utils import sample_triplets, triplet_loss, test_sv
+from utils import sample_triplets, triplet_loss, generate_embeddings, evaluate_modes
 from tqdm import tqdm
 import wandb
 
@@ -48,9 +48,20 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
             train_loss, train_loss_trip, train_loss_ce = train_epoch(train_loader, model, speaker_head, optimizer, gamma, device)
             run.log({"train_loss": train_loss, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce})
             model.eval()
-            for mode in eval_modes:
-                eer = test_sv(test_loader, model, mode, 43, device)
-                run.log({f"{mode}_eval_eer": eer})
+            embeddings, speaker_labels, style_labels = generate_embeddings(
+                test_loader=test_loader,
+                model=model,
+                device=device,
+            )
+            mode_results = evaluate_modes(
+            embeddings=embeddings,
+            speaker_labels=speaker_labels,
+            style_labels=style_labels,
+            modes=eval_modes,
+            seed=43,
+        )
+        for mode, result in mode_results.items():
+            run.log({f"{mode}_eval_eer": result["eer"]})
 
             
 

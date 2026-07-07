@@ -23,8 +23,13 @@ class WandbConfig:
     project_name: str = "whispered_sv"
 
 @dataclass
+class BaselineConfig:
+    model_names: list[str] = field(default_factory=lambda: ["redimnet-b6", "redimnet-b2"])
+    results_filename: str = "results.json"
+@dataclass
 class Config:
     data: DataConfig = field(default_factory=DataConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
+    baseline: BaselineConfig = field(default_factory=BaselineConfig)
     wandb: WandbConfig = field(default_factory=WandbConfig)

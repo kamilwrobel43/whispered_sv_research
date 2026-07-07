@@ -32,19 +32,7 @@ class SVModel(nn.Module):
 
 
     def forward(self, x):
-        
         return self.encoder(x)
-
-class SVDummyModel(nn.Module):
-    def __init__(self, emb_dim):
-        super().__init__()
-        self.emb_dim = emb_dim
-
-    def forward(self, x):
-        bs = x.size(0)
-        return torch.rand((bs, self.emb_dim))
-
-
 
 class AAMSoftmax(nn.Module):
     def __init__(self, emb_dim: int, n_speakers: int, scale: float, margin: float):
@@ -84,9 +72,6 @@ class AAMSoftmax(nn.Module):
         
         return logits
     
-
-
-
 
 class CosineSoftmax(nn.Module):
     def __init__(self, emb_dim, n_speakers=1000, scale=30.0):

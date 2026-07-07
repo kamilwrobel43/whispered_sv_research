@@ -6,6 +6,13 @@ data:
 model:
   name: "redimnet-b6"
 
+baseline:
+  model_names:
+    - "redimnet-b6"
+    - "redimnet-b4"
+    - "redimnet-b2"
+  results_filename: "baselines.json"
+
 wandb:
   project_name: "whispered_sv"
 

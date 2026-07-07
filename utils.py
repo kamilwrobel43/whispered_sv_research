@@ -1,13 +1,13 @@
 import random
-import torch
 import os
 import numpy as np
-from sklearn.metrics import roc_curve
+import torch
 import torch.nn.functional as F
+from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
 
-def split_speakers(root_dir='', train_ratio=0.7, seed=43):
+def split_speakers(root_dir='', train_ratio=0.6, seed=43):
     random.seed(seed)
     speakers = sorted(os.listdir(root_dir))
     random.shuffle(speakers)
@@ -139,25 +139,51 @@ def compute_eer(embeddings, labels, pairs):
         return eer, eer_threshold
 
 
-def test_sv(test_loader, model, mode, seed, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
+def generate_embeddings(test_loader, model, device=None):
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     all_embeddings = []
     all_speaker_labels = []
     all_style_labels = []
+
     with torch.no_grad():
-        for feats, label, style_label in tqdm(test_loader, desc="Testing"):
-            feats, label, style_label = feats.to(device), label.to(device), style_label.to(device)
+        for feats, label, style_label in tqdm(test_loader, desc="Generating embeddings"):
+            feats = feats.to(device)
+            label = label.to(device)
+            style_label = style_label.to(device)
 
             emb = model(feats)
             all_embeddings.append(emb.cpu())
             all_speaker_labels.extend(label.cpu().numpy())
             all_style_labels.extend(style_label.cpu().numpy())
 
-    # Stack all results
-    all_embeddings = torch.cat(all_embeddings)
+    embeddings = torch.cat(all_embeddings)
+    return embeddings, np.array(all_speaker_labels), np.array(all_style_labels)
 
-    pairs = generate_balanced_pairs(all_speaker_labels, all_style_labels, neutral=0, mode=mode, seed=seed)
-    print("mode:", mode, "| total pairs:", len(pairs),
-        "| pos:", sum(1 for i,j in pairs if all_speaker_labels[i]==all_speaker_labels[j]),
-        "| neg:", sum(1 for i,j in pairs if all_speaker_labels[i]!=all_speaker_labels[j]))
-    eer, threshold = compute_eer(all_embeddings, all_speaker_labels, pairs)
-    return eer
+
+def evaluate_mode(embeddings, speaker_labels, style_labels, mode, seed):
+    if isinstance(embeddings, np.ndarray):
+        embeddings = torch.tensor(embeddings, dtype=torch.float32)
+    if isinstance(speaker_labels, list):
+        speaker_labels = np.array(speaker_labels)
+    if isinstance(style_labels, list):
+        style_labels = np.array(style_labels)
+
+    pairs = generate_balanced_pairs(speaker_labels, style_labels, neutral=0, mode=mode, seed=seed)
+    eer, _ = compute_eer(embeddings, speaker_labels, pairs)
+    return {"mode": mode, "eer": eer}
+
+
+def evaluate_modes(embeddings, speaker_labels, style_labels, modes, seed):
+    results = {}
+    for mode in modes:
+        result = evaluate_mode(embeddings, speaker_labels, style_labels, mode, seed)
+        results[mode] = result
+    return results
+
+
+def test_sv(test_loader, model, mode, seed, device=None):
+    embeddings, speaker_labels, style_labels = generate_embeddings(test_loader, model, device=device)
+    result = evaluate_mode(embeddings, speaker_labels, style_labels, mode, seed)
+    return result["eer"]
