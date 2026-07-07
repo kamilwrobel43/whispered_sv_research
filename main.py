@@ -18,58 +18,18 @@ def main(cfg: Config):
 
 
     device = torch.device("cuda" if torch.cuda.is_available else "cpu")
-    # device = torch.device("cpu")
-    # solo_path = "/home/kamil/Datasets/chains/solo"
-    # whsp_path = "/home/kamil/Datasets/chains/whsp"
-
-    solo_path = cfg.data.solo_path
-    whsp_path = cfg.data.whsp_path
-    train_ratio = cfg.data.split_ratio
-    batch_size = cfg.training.batch_size
-    epochs = cfg.training.epochs
-
-    #wandb.login()
-    wandb_project = cfg.wandb.project_name
-    wandb_config = {"epochs": epochs}
-    
-
-
-
-    
-    train_speakers, test_speakers = split_speakers(root_dir = solo_path, train_ratio=train_ratio)
-
-    # train_dataset = ChainsDatasetSV(solo_path, whsp_path, train_speakers)
-    # test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
-
-    train_dataset = ChainsDataset(solo_path, whsp_path, train_speakers)
-    test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
-
-    train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
-
     model = SVModel().to(device)
-    for param in model.parameters():
-        param.requires_grad = False
-    speaker_head = AAMSoftmax(emb_dim=192, n_speakers=len(train_speakers), scale=30.0, margin=0.2).to(device)
-    optimizer = torch.optim.AdamW([
-    {"params": filter(lambda p: p.requires_grad, model.parameters()), "lr": 1e-4},
-    {"params": speaker_head.parameters(), "lr": 1e-3} 
-])
-    
-
-    #train_model(train_loader, test_loader, model, speaker_head, optimizer, 0.01, ["all"], epochs, wandb_project, wandb_config, device)
-    model = SVDummyModel(192).to(device)
     model.eval()
     with open("eval.txt", "w") as f: 
         for seed in [43, 33, 30, 20]:
             train_speakers, test_speakers = split_speakers(root_dir = solo_path, train_ratio=train_ratio, seed=seed)
-            print("test speakers:", len(test_speakers))
+            f.write("test speakers:", len(test_speakers))
             test_dataset = ChainsDatasetSV(solo_path, whsp_path, test_speakers)
             test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
-            f.write(f"SEED: {seed}, {test_speakers}")
+            f.write(f"SEED: {seed}, {test_speakers} \n")
             for mode in ["neutral-neutral", "whisper-whisper", "all"]:
                 eer = test_sv(test_loader, model, mode, seed, device)
-                f.write(f"{mode}: {(eer*100):.2f}% | ")
+                f.write(f"{mode}: {(eer*100):.2f}%\n")
 
 
 

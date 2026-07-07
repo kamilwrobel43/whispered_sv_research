@@ -33,26 +33,26 @@ lr_ecapa = 1e-5
 gamma = 1e-4
 aug = 0.5
 
-seeds = [93829758]
+seeds = [43, 33, 30, 20]
 
 
 eer_nw = []
 eer_nn = []
 eer_ww = []
 eer_aa = []
-
+f = open("test2.txt", "w")
 # Loop through all seeds
 for q in range(len(seeds)):
     seed = seeds[q]
     print("################################################################################################################")
-    print("seed: ", seed)
+    f.write("seed: ", seed)
 
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     torch.cuda.empty_cache()
 
-    train_speakers, test_speakers = split_speakers(root_dir = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/", train_ratio=0.6)
-    print("Train_speakers: ", train_speakers, "\tTest_speakers: ", test_speakers)
+    train_speakers, test_speakers = split_speakers(root_dir = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/", train_ratio=0.6, seed=seed)
+    f.write("Train_speakers: ", train_speakers, "\tTest_speakers: ", test_speakers)
 
     n_speakers = len(train_speakers)
     
@@ -68,28 +68,28 @@ for q in range(len(seeds)):
     # Speaker verification testing
 
     test_dataset = ChainsDatasetSV(root_solo="/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/", root_whsp="/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/whsp/", speaker_dirs=test_speakers)
-    print("\nTesting dataset: ", len(test_dataset))
+    f.write("\nTesting dataset: ", len(test_dataset))
 
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     model.eval()
     # Final testing Normal vs. Whispered
-    eer = test_sv(model=model, mode="neutral-whisper", seed=seed)
+    eer = test_sv(test_loader=test_loader, model=model, mode="neutral-whisper", seed=seed)
     eer_nw.append(eer)
 
     # Final testing Normal vs. Normal
-    eer = test_sv(model=model, mode="neutral-neutral", seed=seed)
+    eer = test_sv(test_loader=test_loader, model=model, mode="neutral-neutral", seed=seed)
     eer_nn.append(eer)
 
     # Final testing Whispred vs. Whipsered
-    eer = test_sv(model=model, mode="whisper-whisper", seed=seed)
+    eer = test_sv(test_loader=test_loader, model=model, mode="whisper-whisper", seed=seed)
     eer_ww.append(eer)
 
     # Final testing All vs. All
-    eer = test_sv(model=model, mode="all", seed=seed)
+    eer = test_sv(test_loader=test_loader, model=model, mode="all", seed=seed)
     eer_aa.append(eer)
 
-print("#############################  RESULTS  ##############################")
+f.write("#############################  RESULTS  ##############################")
 dict = {'NORMAL VS. WHSP': eer_nw,
         'NORMAL VS. NORMAL': eer_nn,
         'WHSP VS. WHSP': eer_ww,
@@ -97,4 +97,4 @@ dict = {'NORMAL VS. WHSP': eer_nw,
 
 df = pd.DataFrame(dict)
 
-print(df)
+f.write(str(df))

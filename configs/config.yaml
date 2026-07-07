@@ -1,7 +1,7 @@
 data:
   solo_path: "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
   whsp_path: "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
-  split_ratio: 0.7
+  split_ratio: 0.6
 
 model:
   name: "redimnet-b6"
@@ -10,7 +10,7 @@ wandb:
   project_name: "whispered_sv"
 
 training:
-  batch_size: 32
+  batch_size: 128
   epochs: 5
   optimizer: "adamw"
   lr: 1e-4
