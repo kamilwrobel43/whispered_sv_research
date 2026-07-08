@@ -54,7 +54,7 @@ def main(cfg: Config):
     
 
     
-    train_model(train_loader, test_loader, model, speaker_head, gamma, eval_modes, n_epochs, "whispered-sv", wandb_config, device, seed)
+    train_model(train_loader, test_loader, model, speaker_head, optimizer, gamma, eval_modes, n_epochs, "whispered-sv", wandb_config, device, seed)
 
     torch.save(model.state_dict(), "model.pth")
 
