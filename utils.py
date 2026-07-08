@@ -1,10 +1,14 @@
 import random
 import os
+from pathlib import Path
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
+
+
 
 
 def split_speakers(root_dir='', train_ratio=0.6, seed=43):
@@ -172,7 +176,7 @@ def evaluate_mode(embeddings, speaker_labels, style_labels, mode, seed):
 
     pairs = generate_balanced_pairs(speaker_labels, style_labels, neutral=0, mode=mode, seed=seed)
     eer, _ = compute_eer(embeddings, speaker_labels, pairs)
-    return {"mode": mode, "eer": eer}
+    return eer
 
 
 def evaluate_modes(embeddings, speaker_labels, style_labels, modes, seed):
@@ -186,4 +190,5 @@ def evaluate_modes(embeddings, speaker_labels, style_labels, modes, seed):
 def test_sv(test_loader, model, mode, seed, device=None):
     embeddings, speaker_labels, style_labels = generate_embeddings(test_loader, model, device=device)
     result = evaluate_mode(embeddings, speaker_labels, style_labels, mode, seed)
-    return result["eer"]
+    return result
+

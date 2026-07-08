@@ -5,6 +5,7 @@ data:
 
 model:
   name: "redimnet-b6"
+  head: "cosine"
 
 baseline:
   model_names:
@@ -21,5 +22,12 @@ training:
   epochs: 5
   optimizer: "adamw"
   lr: 1e-4
+  seed: 43
+  gamma: 1e-4
+  eval_modes:
+    - "neutral-neutral"
+    - "neutral-whisper"
+    - "whisper-whisper"
+    - "all"
 
   

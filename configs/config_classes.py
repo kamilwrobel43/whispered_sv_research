@@ -13,6 +13,9 @@ class TrainingConfig:
     epochs: int = 100
     optimizer: str = "adam"
     lr: float = 1e-4
+    seed: int = 43
+    gamma: float = 1e-4
+    eval_modes: list[str] = field(default_factory=lambda: ["neutral-neutral", "neutral-whisper", "whisper-whisper", "all"])
 
 @dataclass
 class ModelConfig:

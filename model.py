@@ -30,7 +30,6 @@ class SVModel(nn.Module):
         
         return model
 
-
     def forward(self, x):
         return self.encoder(x)
 

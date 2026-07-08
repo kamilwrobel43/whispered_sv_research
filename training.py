@@ -39,7 +39,7 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
 
 
 
-def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, device = torch.device("cuda" if torch.cuda.is_available else "cpu")):
+def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43):
     speaker_head.train()
     with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         for epoch in range(1, n_epochs+1):
@@ -58,10 +58,10 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
             speaker_labels=speaker_labels,
             style_labels=style_labels,
             modes=eval_modes,
-            seed=43,
+            seed=seed,
         )
         for mode, result in mode_results.items():
-            run.log({f"{mode}_eval_eer": result["eer"]})
+            run.log({f"{mode}_eval_eer": result})
 
             
 
