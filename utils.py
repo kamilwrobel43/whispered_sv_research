@@ -152,7 +152,7 @@ def generate_embeddings(test_loader, model, device=None, use_amp: bool = False):
     all_speaker_labels = []
     all_style_labels = []
 
-    with torch.no_grad():
+    with torch.inference_mode():
         for feats, label, style_label in tqdm(test_loader, desc="Generating embeddings"):
             feats = feats.to(device, non_blocking=True)
             label = label.to(device, non_blocking=True)
