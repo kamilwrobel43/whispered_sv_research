@@ -31,6 +31,7 @@ def main(cfg: Config):
     whsp_dir = cfg.data.whsp_path
     train_ratio = cfg.data.split_ratio
 
+    wandb_project = cfg.wandb.project_name
 
     wandb_config = {
         "base_model": model_name,
@@ -48,13 +49,21 @@ def main(cfg: Config):
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
 
     model = SVModel(model_name).to(device)
+    for name, param in model.named_parameters():
+        if "stage4" in name or "stage5" in name:
+            param.requires_grad = True
+        else:
+            param.requires_grad = False
+
+    unfrozen_params = [p for p in model.parameters() if p.requires_grad]
+
     speaker_head = CosineSoftmax(emb_dim=192, n_speakers=len(train_speakers)).to(device)
-    optimizer = torch.optim.AdamW([{'params': model.parameters(), 'lr': lr},
+    optimizer = torch.optim.Adam([{'params': unfrozen_params, 'lr': lr},
                                    {'params': speaker_head.parameters(), 'lr': lr}])
-    
 
     
-    train_model(train_loader, test_loader, model, speaker_head, optimizer, gamma, eval_modes, n_epochs, "whispered-sv", wandb_config, device, seed)
+    
+    train_model(train_loader, test_loader, model, speaker_head, optimizer, gamma, eval_modes, n_epochs, wandb_project, wandb_config, device, seed)
 
     torch.save(model.state_dict(), "model.pth")
 

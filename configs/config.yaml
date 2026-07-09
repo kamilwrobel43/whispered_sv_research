@@ -19,7 +19,7 @@ wandb:
 
 training:
   batch_size: 128
-  epochs: 5
+  epochs: 100
   optimizer: "adamw"
   lr: 1e-4
   seed: 43
