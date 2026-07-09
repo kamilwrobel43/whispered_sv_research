@@ -39,11 +39,13 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
 
 
 
+from omegaconf import ListConfig
+
 def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, unfreezing_schedule: dict[int, list[str]] | None = None, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43):
     speaker_head.train()
     if unfreezing_schedule is not None:
         unfreezing_schedule = {
-            int(epoch): names if isinstance(names, list) else [names]
+            int(epoch): [str(x) for x in names] if isinstance(names, (list, ListConfig)) else [str(names)]
             for epoch, names in unfreezing_schedule.items()
         }
     else:
