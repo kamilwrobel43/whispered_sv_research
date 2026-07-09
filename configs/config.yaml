@@ -25,6 +25,7 @@ training:
   weight_decay: 1e-4
   seed: 43
   gamma: 1e-4
+  use_amp: true
   eval_modes:
     - "neutral-neutral"
     - "neutral-whisper"

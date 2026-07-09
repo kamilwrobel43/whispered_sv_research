@@ -29,6 +29,7 @@ def main(cfg: Config):
     gamma = cfg.training.gamma
     eval_modes = cfg.training.eval_modes
     unfreezing_schedule = cfg.training.unfreezing_schedule
+    use_amp = cfg.training.use_amp
 
     solo_dir = cfg.data.solo_path
     whsp_dir = cfg.data.whsp_path
@@ -77,6 +78,7 @@ def main(cfg: Config):
         wandb_project,
         wandb_config,
         unfreezing_schedule,
+        use_amp,
         device,
         seed,
     )

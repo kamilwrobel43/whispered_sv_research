@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.amp import autocast
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
@@ -143,7 +144,7 @@ def compute_eer(embeddings, labels, pairs):
         return eer, eer_threshold
 
 
-def generate_embeddings(test_loader, model, device=None):
+def generate_embeddings(test_loader, model, device=None, use_amp: bool = False):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -157,7 +158,8 @@ def generate_embeddings(test_loader, model, device=None):
             label = label.to(device, non_blocking=True)
             style_label = style_label.to(device, non_blocking=True)
 
-            emb = model(feats)
+            with autocast(enabled=use_amp):
+                emb = model(feats)
             all_embeddings.append(emb.cpu())
             all_speaker_labels.extend(label.cpu().numpy())
             all_style_labels.extend(style_label.cpu().numpy())
