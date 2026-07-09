@@ -81,10 +81,16 @@ class CosineSoftmax(nn.Module):
         self.scale = scale
 
     def forward(self, x, labels): # labels - to match AAMSoftmax forward structure
-        w = F.normalize(self.fc.weight, dim=1)
+        w = F.normalize(self.weight, dim=1)
         x = F.normalize(x, dim = 1)
         logits = self.scale * (x @ w.t())
         return logits
 
 
 
+if __name__ == "__main__":
+    cs = CosineSoftmax(emb_dim=192, n_speakers=5, scale=30.0)
+
+    x = torch.rand((32,192))
+    out = cs(x, x)
+    print(out.shape)
