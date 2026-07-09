@@ -20,7 +20,7 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
         whsp = whsp.to(device, non_blocking=True)
         label = label.to(device, non_blocking=True)
 
-        with autocast(enabled=use_amp):
+        with autocast("cuda", enabled=use_amp):
             anchors, positives, negatives = sample_triplets(solo, whsp, label, model)
             loss_trip = triplet_loss(anchors, positives, negatives)
 

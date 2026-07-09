@@ -158,7 +158,7 @@ def generate_embeddings(test_loader, model, device=None, use_amp: bool = False):
             label = label.to(device, non_blocking=True)
             style_label = style_label.to(device, non_blocking=True)
 
-            with autocast(enabled=use_amp):
+            with autocast("cuda", enabled=use_amp):
                 emb = model(feats)
             all_embeddings.append(emb.cpu())
             all_speaker_labels.extend(label.cpu().numpy())
