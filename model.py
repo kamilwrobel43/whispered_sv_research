@@ -17,21 +17,56 @@ class SVModel(nn.Module):
                        model_name="b6", 
                        train_type="ft_lm", 
                        dataset="vox2")
+            self.in_channels = 192
         elif self.model_name == "redimnet-b4":
             model = torch.hub.load('IDRnD/ReDimNet', 'ReDimNet', 
                        model_name="b4", 
                        train_type="ft_lm", 
                        dataset="vox2")
+            self.in_channels = 192
         elif self.model_name == "redimnet-b2":
             model = torch.hub.load('IDRnD/ReDimNet', 'ReDimNet', 
                        model_name="b2", 
                        train_type="ft_lm", 
                        dataset="vox2")
+            self.in_channels = 192
         
         return model
 
     def forward(self, x):
         return self.encoder(x)
+    
+class PostProcessor(nn.Module):
+    def __init__(self, base_model_name: str = "redimnet-b6", hidden_dim: int = 128, bottleneck_dim: int = 64, dropout: float = 0.3):
+        super().__init__()
+        self.base_model = SVModel(base_model_name)
+        in_channels = self.base_model.in_channels
+
+        self.encoder = nn.Sequential(
+            nn.Linear(in_channels, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, bottleneck_dim),
+            nn.Dropout(dropout),
+            nn.ReLU()
+        )
+
+        self.decoder = nn.Sequential(
+            nn.Linear(bottleneck_dim, hidden_dim),
+            nn.Dropout(dropout),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, in_channels)
+        )
+
+
+    def forward(self, x):
+        emb = self.base_model(x)
+        out = self.encoder(emb)
+
+        return emb+out
+
+
+######### SPEAKER HEADS ###########
 
 class AAMSoftmax(nn.Module):
     def __init__(self, emb_dim: int, n_speakers: int, scale: float, margin: float):

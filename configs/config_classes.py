@@ -13,9 +13,30 @@ class TrainingConfig:
     epochs: int = 100
     optimizer: str = "adam"
     lr: float = 1e-4
+    lr_ft: float = 1e-5
+    weight_decay: float = 1e-4
     seed: int = 43
     gamma: float = 1e-4
     eval_modes: list[str] = field(default_factory=lambda: ["neutral-neutral", "neutral-whisper", "whisper-whisper", "all"])
+    unfreezing_schedule: dict[int, list[str]] = field(default_factory=lambda: {
+        30: ["backbone.stage0"],
+        25: ["backbone.stage1"],
+        20: ["backbone.stage2"],
+        15: ["backbone.stage3"],
+        10: ["backbone.stage4"],
+        5: ["backbone.stage5"],
+        1: [
+            "backbone.fin_wght1d.w",
+            "pool.linear1.weight",
+            "pool.linear1.bias",
+            "pool.linear2.weight",
+            "pool.linear2.bias",
+            "bn.weight",
+            "bn.bias",
+            "linear.weight",
+            "linear.bias",
+        ],
+    })
 
 @dataclass
 class ModelConfig:

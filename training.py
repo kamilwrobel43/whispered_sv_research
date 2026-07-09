@@ -39,10 +39,25 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
 
 
 
-def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43):
+def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, unfreezing_schedule: dict[int, list[str]] | None = None, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43):
     speaker_head.train()
+    if unfreezing_schedule is not None:
+        unfreezing_schedule = {
+            int(epoch): names if isinstance(names, list) else [names]
+            for epoch, names in unfreezing_schedule.items()
+        }
+    else:
+        unfreezing_schedule = {}
+
     with wandb.init(project=wandb_project_name, config=wandb_config) as run:
         for epoch in range(1, n_epochs+1):
+            if epoch in unfreezing_schedule:
+                layer_names = unfreezing_schedule.pop(epoch)
+                for name, param in model.named_parameters():
+                    if any(target == name or target in name for target in layer_names):
+                        if not param.requires_grad:
+                            param.requires_grad = True
+                            
 
             model.train()
             train_loss, train_loss_trip, train_loss_ce = train_epoch(train_loader, model, speaker_head, optimizer, gamma, device)
@@ -54,12 +69,12 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
                 device=device,
             )
             mode_results = evaluate_modes(
-            embeddings=embeddings,
-            speaker_labels=speaker_labels,
-            style_labels=style_labels,
-            modes=eval_modes,
-            seed=seed,
-        )
+                embeddings=embeddings,
+                speaker_labels=speaker_labels,
+                style_labels=style_labels,
+                modes=eval_modes,
+                seed=seed,
+            )
             for mode, result in mode_results.items():
                 run.log({f"{mode}_eval_eer": result}, step=epoch)
 

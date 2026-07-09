@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from training import train_model
 from dataset import ChainsDataset, ChainsDatasetSV
 from utils import split_speakers
-from model import SVModel, CosineSoftmax, AAMSoftmax
+from model import SVModel, PostProcessor, CosineSoftmax, AAMSoftmax
 
 cs = ConfigStore.instance()
 cs.store(name="base_cfg", node=Config)
@@ -22,10 +22,13 @@ def main(cfg: Config):
     n_epochs = cfg.training.epochs
     batch_size = cfg.training.batch_size
     lr = cfg.training.lr
+    lr_ft = cfg.training.lr_ft
+    weight_decay = cfg.training.weight_decay
     optimizer_name = cfg.training.optimizer
     seed = cfg.training.seed
     gamma = cfg.training.gamma
     eval_modes = cfg.training.eval_modes
+    unfreezing_schedule = cfg.training.unfreezing_schedule
 
     solo_dir = cfg.data.solo_path
     whsp_dir = cfg.data.whsp_path
@@ -37,7 +40,8 @@ def main(cfg: Config):
         "base_model": model_name,
         "batch_size": batch_size,
         "gamma": gamma,
-        "lr": lr
+        "lr": lr,
+        "weight_decay": weight_decay
     }
 
 
@@ -48,22 +52,34 @@ def main(cfg: Config):
     train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
 
-    model = SVModel(model_name).to(device)
-    for name, param in model.named_parameters():
-        if "stage4" in name or "stage5" in name:
-            param.requires_grad = True
-        else:
-            param.requires_grad = False
+    model = PostProcessor(model_name).to(device)
+    speaker_head = CosineSoftmax(192, len(train_speakers)).to(device)
 
+    model.base_model.requires_grad_=False
     unfrozen_params = [p for p in model.parameters() if p.requires_grad]
 
-    speaker_head = CosineSoftmax(emb_dim=192, n_speakers=len(train_speakers)).to(device)
-    optimizer = torch.optim.Adam([{'params': unfrozen_params, 'lr': lr},
-                                   {'params': speaker_head.parameters(), 'lr': lr}])
-
+    optimizer = torch.optim.Adam([
+        {"params": unfrozen_params, "lr": lr},
+        {'params': model.base_model.parameters(), 'lr': lr_ft},
+        {"params": speaker_head.parameters(), "lr": lr},
+    ], weight_decay=1e-4)
     
     
-    train_model(train_loader, test_loader, model, speaker_head, optimizer, gamma, eval_modes, n_epochs, wandb_project, wandb_config, device, seed)
+    train_model(
+        train_loader,
+        test_loader,
+        model,
+        speaker_head,
+        optimizer,
+        gamma,
+        eval_modes,
+        n_epochs,
+        wandb_project,
+        wandb_config,
+        unfreezing_schedule,
+        device,
+        seed,
+    )
 
     torch.save(model.state_dict(), "model.pth")
 
