@@ -56,14 +56,15 @@ def main(cfg: Config):
     speaker_head = CosineSoftmax(192, len(train_speakers)).to(device)
 
     model.base_model.requires_grad_=False
-    unfrozen_params = [p for p in model.parameters() if p.requires_grad]
+    
+    base_params = list(model.base_model.parameters())
+    other_params = [p for p in model.parameters() if id(p) not in {id(x) for x in base_params}]
 
     optimizer = torch.optim.Adam([
-        {"params": unfrozen_params, "lr": lr},
-        {'params': model.base_model.parameters(), 'lr': lr_ft},
+        {"params": other_params, "lr": lr},
+        {"params": base_params, "lr": lr_ft},
         {"params": speaker_head.parameters(), "lr": lr},
-    ], weight_decay=1e-4)
-    
+    ], weight_decay=weight_decay)
     
     train_model(
         train_loader,
