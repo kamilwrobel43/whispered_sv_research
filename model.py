@@ -61,8 +61,7 @@ class PostProcessor(nn.Module):
 
     def forward(self, x):
         emb = self.base_model(x)
-        out = self.encoder(emb)
-
+        out = self.decoder(self.encoder(emb))
         return emb+out
 
 
@@ -126,6 +125,11 @@ class CosineSoftmax(nn.Module):
 if __name__ == "__main__":
     cs = CosineSoftmax(emb_dim=192, n_speakers=5, scale=30.0)
 
-    x = torch.rand((32,192))
-    out = cs(x, x)
-    print(out.shape)
+    pp = PostProcessor()
+
+
+
+    x = torch.rand((32,500))
+
+    pp(x)
+    # print(out.shape)
