@@ -46,7 +46,7 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
 
             model.train()
             train_loss, train_loss_trip, train_loss_ce = train_epoch(train_loader, model, speaker_head, optimizer, gamma, device)
-            run.log({"train_loss": train_loss, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce})
+            run.log({"train_loss": train_loss, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce}, step=epoch)
             model.eval()
             embeddings, speaker_labels, style_labels = generate_embeddings(
                 test_loader=test_loader,
@@ -60,8 +60,8 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
             modes=eval_modes,
             seed=seed,
         )
-        for mode, result in mode_results.items():
-            run.log({f"{mode}_eval_eer": result})
+            for mode, result in mode_results.items():
+                run.log({f"{mode}_eval_eer": result}, step=epoch)
 
             
 
