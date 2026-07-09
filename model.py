@@ -80,7 +80,7 @@ class CosineSoftmax(nn.Module):
         nn.init.xavier_uniform_(self.weight)
         self.scale = scale
 
-    def forward(self, x):
+    def forward(self, x, labels): # labels - to match AAMSoftmax forward structure
         w = F.normalize(self.fc.weight, dim=1)
         x = F.normalize(x, dim = 1)
         logits = self.scale * (x @ w.t())
