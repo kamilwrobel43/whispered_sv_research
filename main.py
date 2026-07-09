@@ -44,13 +44,12 @@ def main(cfg: Config):
         "weight_decay": weight_decay
     }
 
-
     train_speakers, test_speakers = split_speakers(root_dir=solo_dir, train_ratio=train_ratio, seed=seed)
     train_dataset = ChainsDataset(solo_dir, whsp_dir, train_speakers)
     test_dataset = ChainsDatasetSV(solo_dir, whsp_dir, test_speakers)
 
-    train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size, shuffle=True, pin_memory=True, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
     model = PostProcessor(model_name).to(device)
     speaker_head = CosineSoftmax(192, len(train_speakers)).to(device)

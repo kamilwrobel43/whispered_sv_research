@@ -153,9 +153,9 @@ def generate_embeddings(test_loader, model, device=None):
 
     with torch.no_grad():
         for feats, label, style_label in tqdm(test_loader, desc="Generating embeddings"):
-            feats = feats.to(device)
-            label = label.to(device)
-            style_label = style_label.to(device)
+            feats = feats.to(device, non_blocking=True)
+            label = label.to(device, non_blocking=True)
+            style_label = style_label.to(device, non_blocking=True)
 
             emb = model(feats)
             all_embeddings.append(emb.cpu())

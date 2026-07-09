@@ -15,7 +15,9 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
     
     total_loss, total_loss_trip, total_loss_ce, total_samples = 0.0, 0.0, 0.0, 0
     for solo, whsp, label in tqdm(train_loader, desc="Training"):
-        solo, whsp, label = solo.to(device), whsp.to(device), label.to(device)
+        solo = solo.to(device, non_blocking=True)
+        whsp = whsp.to(device, non_blocking=True)
+        label = label.to(device, non_blocking=True)
 
         anchors, positives, negatives = sample_triplets(solo, whsp, label, model)
         loss_trip = triplet_loss(anchors, positives, negatives)
