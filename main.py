@@ -18,6 +18,8 @@ cs.store(name="base_cfg", node=Config)
 def main(cfg: Config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    
+
     model_name = cfg.model.name
     n_epochs = cfg.training.epochs
     batch_size = cfg.training.batch_size
@@ -65,6 +67,8 @@ def main(cfg: Config):
         {"params": base_params, "lr": lr_ft},
         {"params": speaker_head.parameters(), "lr": lr},
     ], weight_decay=weight_decay)
+
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs)
     
     train_model(
         train_loader,
@@ -81,6 +85,7 @@ def main(cfg: Config):
         use_amp,
         device,
         seed,
+        scheduler,
     )
 
     torch.save(model.state_dict(), "model.pth")

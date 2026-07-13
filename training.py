@@ -49,7 +49,7 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
 
 from omegaconf import ListConfig
 
-def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, unfreezing_schedule: dict[int, list[str]] | None = None, use_amp: bool = False, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43):
+def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, unfreezing_schedule: dict[int, list[str]] | None = None, use_amp: bool = False, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43, scheduler: torch.optim.lr_scheduler.LRScheduler | None = None):
     speaker_head.train()
     if unfreezing_schedule is not None:
         unfreezing_schedule = {
@@ -89,6 +89,9 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
             )
             for mode, result in mode_results.items():
                 run.log({f"{mode}_eval_eer": result}, step=epoch)
+
+            if scheduler is not None:
+                scheduler.step()
 
             
 
