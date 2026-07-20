@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.amp import autocast, GradScaler
 from torch.utils.data import DataLoader
+from omegaconf import ListConfig
 from utils import sample_triplets, triplet_loss, generate_embeddings, evaluate_modes
 from tqdm import tqdm
 import wandb
@@ -47,7 +48,7 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
 
 
 
-from omegaconf import ListConfig
+
 
 def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, unfreezing_schedule: dict[int, list[str]] | None = None, use_amp: bool = False, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43, scheduler: torch.optim.lr_scheduler.LRScheduler | None = None):
     speaker_head.train()

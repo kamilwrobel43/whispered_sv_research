@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 
 
+
 class SVModel(nn.Module):
     def __init__(self, model_name: str = "redimnet-b6"):
         super().__init__()
