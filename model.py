@@ -106,7 +106,8 @@ class GRLStyleClassifier(nn.Module):
         )
 
     def forward(self, x):
-        return self.grl(self.clf_head(x))
+        x = F.normalize(x)
+        return self.clf_head(self.grl(x))
     
 
 ######### SPEAKER HEADS ###########
