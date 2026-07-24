@@ -89,7 +89,8 @@ class PostProcessor(nn.Module):
         return self.decoder(x) + residual
 
     def forward(self, x):
-        return self.decode(self.encode(x), x)
+        enc, emb = self.encode(x)
+        return self.decode(enc, emb)
 
 
 class GRLStyleClassifier(nn.Module):

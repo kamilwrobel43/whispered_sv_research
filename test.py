@@ -1,10 +1,11 @@
 from torch.utils.data import DataLoader
 
 from dataset import ChainsDataset, ChainsDatasetSV
-from utils import split_speakers, sample_triplets, triplet_loss
+from utils import split_speakers, sample_triplets, triplet_loss, generate_embeddings
 from model import SVModel, GRLStyleClassifier, PostProcessor, AAMSoftmax
 import torch.nn.functional as F
 import torch
+
 
 
 
@@ -26,23 +27,29 @@ if __name__ == "__main__":
     speaker_head = AAMSoftmax(192, n_speakers=len(train_speakers), scale=30, margin=0.3)
 
     
-    for solo, whsp, label in train_loader:
+    # for solo, whsp, label in train_loader:
 
-        solo_enc, solo = postprocessor.encode(solo)
-        whsp_enc, whsp = postprocessor.encode(whsp)
-        anch, pos, neg = sample_triplets(solo_enc, solo, whsp_enc, whsp, label, postprocessor)
-        loss_trip = triplet_loss(anch, pos, neg)
+    #     solo_enc, solo = postprocessor.encode(solo)
+    #     whsp_enc, whsp = postprocessor.encode(whsp)
+    #     anch, pos, neg = sample_triplets(solo_enc, solo, whsp_enc, whsp, label, postprocessor)
+    #     loss_trip = triplet_loss(anch, pos, neg)
 
-        solo_logits = grl_head(solo_enc)
-        whsp_logits = grl_head(whsp_enc)
+    #     solo_logits = grl_head(solo_enc)
+    #     whsp_logits = grl_head(whsp_enc)
 
-        loss_adv = (F.cross_entropy(solo_logits, torch.ones_like(label)) + F.cross_entropy(whsp_logits, torch.zeros_like(label))) // 2
+    #     loss_adv = (F.cross_entropy(solo_logits, torch.ones_like(label)) + F.cross_entropy(whsp_logits, torch.zeros_like(label))) // 2
 
-        logits = speaker_head(pos, label)
+    #     logits = speaker_head(pos, label)
 
-        loss_ce = F.cross_entropy(logits, label)
+    #     loss_ce = F.cross_entropy(logits, label)
 
-        print("DONE")
+    #     print("DONE")
+    #     break
+
+
+    for feats, _, _ in test_loader:
+        print(feats)
         break
 
+    generate_embeddings(test_loader, postprocessor, torch.device("cpu"), use_amp = True)
 
