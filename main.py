@@ -88,7 +88,7 @@ def main(cfg: Config):
         n_epochs,
         wandb_project,
         wandb_config,
-        None,
+        unfreezing_schedule,
         use_amp,
         device,
         seed,
