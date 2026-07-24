@@ -60,14 +60,14 @@ def main(cfg: Config):
     speaker_head = AAMSoftmax(192, len(train_speakers), scale=30.0, margin=0.3).to(device)
     style_head = GRLStyleClassifier(64).to(device)
 
-    model.sv_model.requires_grad_=False
+    model.sv_model.requires_grad_(False)
     
     base_params = list(model.sv_model.parameters())
     other_params = [p for p in model.parameters() if id(p) not in {id(x) for x in base_params}]
 
     optimizer = torch.optim.Adam([
         {"params": other_params, "lr": lr},
-        #{"params": base_params, "lr": lr_ft},
+        {"params": base_params, "lr": lr_ft},
         {"params": speaker_head.parameters(), "lr": lr},
         {"params": style_head.parameters(), "lr": lr}
     ], weight_decay=weight_decay)
