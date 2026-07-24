@@ -13,7 +13,7 @@ import wandb
 
 
 
-def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, style_head: nn.Module, optimizer: torch.optim.Optimizer, gammas: tuple[float], device = torch.device("cuda" if torch.cuda.is_available else "cpu"), use_amp: bool = False, scaler: GradScaler | None = None, grl_scheduler = None):
+def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, style_head: nn.Module, optimizer: torch.optim.Optimizer, gammas: tuple[float], device = torch.device("cuda" if torch.cuda.is_available() else "cpu"), use_amp: bool = False, scaler: GradScaler | None = None, grl_scheduler = None):
     
     total_loss, total_loss_trip, total_loss_ce, total_loss_adv, total_samples = 0.0, 0.0, 0.0, 0.0, 0
     for solo, whsp, label in tqdm(train_loader, desc="Training"):
@@ -30,7 +30,8 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
         whsp = whsp.to(device, non_blocking=True)
         label = label.to(device, non_blocking=True)
 
-        with autocast("cuda", enabled=use_amp):
+        device_type = device.type if isinstance(device, torch.device) else str(device)
+        with autocast(device_type, enabled=use_amp):
 
             solo_enc, solo = model.encode(solo)
             whsp_enc, whsp = model.encode(whsp)
@@ -40,7 +41,7 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
             solo_logits = style_head(solo_enc)
             whsp_logits = style_head(whsp_enc)
 
-            loss_adv = (F.cross_entropy(solo_logits, torch.ones_like(label)) + F.cross_entropy(whsp_logits, torch.zeros_like(label))) // 2
+            loss_adv = (F.cross_entropy(solo_logits, torch.ones_like(label)) + F.cross_entropy(whsp_logits, torch.zeros_like(label))) / 2
 
             logits = speaker_head(pos, label)
 
@@ -83,6 +84,7 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
         unfreezing_schedule = {}
 
     with wandb.init(project=wandb_project_name, config=wandb_config) as run:
+        scaler = GradScaler(enabled=use_amp)
         for epoch in range(1, n_epochs+1):
             if epoch in unfreezing_schedule:
                 layer_names = unfreezing_schedule.pop(epoch)
@@ -92,9 +94,19 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
                             param.requires_grad = True
                             
 
-            scaler = GradScaler(enabled=use_amp)
             model.train()
-            train_loss, train_loss_trip, train_loss_ce, train_loss_adv = train_epoch(train_loader, model, speaker_head, style_head, optimizer, gammas, device, use_amp, scaler, grl_scheduler)
+            train_loss, train_loss_trip, train_loss_ce, train_loss_adv = train_epoch(
+                train_loader,
+                model,
+                speaker_head,
+                style_head,
+                optimizer,
+                gammas,
+                device=device,
+                use_amp=use_amp,
+                scaler=scaler,
+                grl_scheduler=grl_scheduler,
+            )
             run.log({"train_loss": train_loss, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce, "train_loss_adv": train_loss_adv}, step=epoch)
             model.eval()
             embeddings, speaker_labels, style_labels = generate_embeddings(
