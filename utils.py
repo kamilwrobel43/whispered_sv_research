@@ -27,9 +27,9 @@ def split_speakers(root_dir='', train_ratio=0.6, seed=43):
 
 
 
-def sample_triplets(solo_batch, whsp_batch, labels, model):
-    anchors = model(solo_batch)    # shape: [batch_size, embedding_dim]
-    positives = model(whsp_batch)  # shape: [batch_size, embedding_dim]
+def sample_triplets(solo_batch, solo_res, whsp_batch, whsp_res, labels, model):
+    anchors = model.decode(solo_batch, solo_res)    # shape: [batch_size, embedding_dim]
+    positives = model.decode(whsp_batch, whsp_res)  # shape: [batch_size, embedding_dim]
 
     batch_size = labels.size(0)
 

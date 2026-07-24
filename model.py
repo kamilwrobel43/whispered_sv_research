@@ -2,8 +2,30 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from pytorch_revgrad import RevGrad
+import math
 
+class DANNAlphaScheduler:
+    def __init__(self, total_steps, gamma=10.0, max_alpha=1.0):
+        self.total_steps = total_steps
+        self.gamma = gamma
+        self.max_alpha = max_alpha
+        self.current_step = 0
 
+    def step(self):
+        """
+        Calculate the current alpha based on training progress and increment the step.
+        Should be called once per training batch.
+        """
+        # Calculate progress 'p' as a float between 0.0 and 1.0
+        p = float(self.current_step) / self.total_steps
+        p = min(max(p, 0.0), 1.0) 
+        
+        # Calculate alpha using the DANN formula
+        alpha = (2.0 / (1.0 + math.exp(-self.gamma * p)) - 1.0) * self.max_alpha
+        
+        self.current_step += 1
+        return float(alpha)
 
 
 class SVModel(nn.Module):
@@ -38,13 +60,13 @@ class SVModel(nn.Module):
         return self.encoder(x)
     
 class PostProcessor(nn.Module):
-    def __init__(self, base_model_name: str = "redimnet-b6", hidden_dim: int = 128, bottleneck_dim: int = 64, dropout: float = 0.3):
+    def __init__(self, sv_model: str = "redimnet-b6",  hidden_dim: int = 128, bottleneck_dim: int = 64, dropout: float = 0.3):
         super().__init__()
-        self.base_model = SVModel(base_model_name)
-        in_channels = self.base_model.in_channels
 
+        self.sv_model = SVModel(sv_model)
+        self.in_channels = self.sv_model.in_channels
         self.encoder = nn.Sequential(
-            nn.Linear(in_channels, hidden_dim),
+            nn.Linear(self.in_channels, hidden_dim),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, bottleneck_dim),
@@ -56,15 +78,35 @@ class PostProcessor(nn.Module):
             nn.Linear(bottleneck_dim, hidden_dim),
             nn.Dropout(dropout),
             nn.ReLU(),
-            nn.Linear(hidden_dim, in_channels)
+            nn.Linear(hidden_dim, self.in_channels)
         )
-
+    
+    def encode(self, x):
+        emb = self.sv_model(x)
+        return self.encoder(emb), emb
+    
+    def decode(self, x, residual):
+        return self.decoder(x) + residual
 
     def forward(self, x):
-        emb = self.base_model(x)
-        out = self.decoder(self.encoder(emb))
-        return emb+out
+        return self.decode(self.encode(x), x)
 
+
+class GRLStyleClassifier(nn.Module):
+    def __init__(self, bottleneck_dim):
+        super().__init__()
+
+        self.grl = RevGrad()
+
+        self.clf_head = nn.Sequential(
+            nn.Linear(bottleneck_dim, bottleneck_dim//2),
+            nn.ReLU(),
+            nn.Linear(bottleneck_dim//2, 2)
+        )
+
+    def forward(self, x):
+        return self.grl(self.clf_head(x))
+    
 
 ######### SPEAKER HEADS ###########
 

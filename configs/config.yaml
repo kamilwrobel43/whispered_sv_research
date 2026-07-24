@@ -24,7 +24,9 @@ training:
   lr_ft: 1e-5
   weight_decay: 1e-4
   seed: 43
-  gamma: 1e-4
+  gammas:
+    - 1e-4
+    - 0.5
   use_amp: true
   eval_modes:
     - "neutral-neutral"
@@ -54,5 +56,6 @@ training:
       - "bn.bias"
       - "linear.weight"
       - "linear.bias"
+  device: "cuda"
 
   

@@ -16,7 +16,7 @@ class TrainingConfig:
     lr_ft: float = 1e-5
     weight_decay: float = 1e-4
     seed: int = 43
-    gamma: float = 1e-4
+    gammas: tuple[float] = (1e-4, 0.5)
     use_amp: bool = True
     eval_modes: list[str] = field(default_factory=lambda: ["neutral-neutral", "neutral-whisper", "whisper-whisper", "all"])
     unfreezing_schedule: dict[int, list[str]] = field(default_factory=lambda: {
@@ -38,6 +38,7 @@ class TrainingConfig:
             "linear.bias",
         ],
     })
+    device: str = "cuda"
 
 @dataclass
 class ModelConfig:

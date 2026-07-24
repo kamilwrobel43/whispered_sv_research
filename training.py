@@ -13,21 +13,40 @@ import wandb
 
 
 
-def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), use_amp: bool = False, scaler: GradScaler | None = None):
+def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, style_head: nn.Module, optimizer: torch.optim.Optimizer, gammas: tuple[float], device = torch.device("cuda" if torch.cuda.is_available else "cpu"), use_amp: bool = False, scaler: GradScaler | None = None, grl_scheduler = None):
     
-    total_loss, total_loss_trip, total_loss_ce, total_samples = 0.0, 0.0, 0.0, 0
+    total_loss, total_loss_trip, total_loss_ce, total_loss_adv, total_samples = 0.0, 0.0, 0.0, 0.0, 0
     for solo, whsp, label in tqdm(train_loader, desc="Training"):
+
+        if grl_scheduler:
+            curr_alpha = grl_scheduler.step()
+            style_head.grl.alpha = torch.tensor(
+                [curr_alpha],
+                dtype=torch.float32,
+                device=device,
+                requires_grad=False
+            )
         solo = solo.to(device, non_blocking=True)
         whsp = whsp.to(device, non_blocking=True)
         label = label.to(device, non_blocking=True)
 
         with autocast("cuda", enabled=use_amp):
-            anchors, positives, negatives = sample_triplets(solo, whsp, label, model)
-            loss_trip = triplet_loss(anchors, positives, negatives)
 
-            logits = speaker_head(positives, label)
+            solo_enc, solo = model.encode(solo)
+            whsp_enc, whsp = model.encode(whsp)
+            anch, pos, neg = sample_triplets(solo_enc, solo, whsp_enc, whsp, label, model)
+            loss_trip = triplet_loss(anch, pos, neg)
+
+            solo_logits = style_head(solo_enc)
+            whsp_logits = style_head(whsp_enc)
+
+            loss_adv = (F.cross_entropy(solo_logits, torch.ones_like(label)) + F.cross_entropy(whsp_logits, torch.zeros_like(label))) // 2
+
+            logits = speaker_head(pos, label)
+
             loss_ce = F.cross_entropy(logits, label)
-            loss = loss_trip + gamma * loss_ce
+
+            loss = loss_trip + gammas[0]*loss_ce + gammas[1]*loss_adv
 
         optimizer.zero_grad()
         if use_amp and scaler is not None:
@@ -43,15 +62,18 @@ def train_epoch(train_loader: DataLoader, model: nn.Module, speaker_head: nn.Mod
         total_loss += loss.item()
         total_loss_trip += loss_trip.item()
         total_loss_ce += loss_ce.item()
+        total_loss_adv += loss_adv.item()
 
-    return total_loss / total_samples, total_loss_trip / total_samples, total_loss_ce / total_samples
-
-
-
+    return total_loss / total_samples, total_loss_trip / total_samples, total_loss_ce / total_samples, total_loss_adv / total_samples
 
 
-def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, optimizer: torch.optim.Optimizer, gamma: float, eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, unfreezing_schedule: dict[int, list[str]] | None = None, use_amp: bool = False, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43, scheduler: torch.optim.lr_scheduler.LRScheduler | None = None):
+
+
+
+def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Module, speaker_head: nn.Module, style_head: nn.Module, optimizer: torch.optim.Optimizer, gammas: tuple[float], eval_modes: list, n_epochs: int, wandb_project_name: str, wandb_config: dict, unfreezing_schedule: dict[int, list[str]] | None = None, use_amp: bool = False, device = torch.device("cuda" if torch.cuda.is_available else "cpu"), seed: int = 43, scheduler: torch.optim.lr_scheduler.LRScheduler | None = None, grl_scheduler = None):
     speaker_head.train()
+    style_head.train()
+
     if unfreezing_schedule is not None:
         unfreezing_schedule = {
             int(epoch): [str(x) for x in names] if isinstance(names, (list, ListConfig)) else [str(names)]
@@ -72,8 +94,8 @@ def train_model(train_loader: DataLoader, test_loader: DataLoader, model: nn.Mod
 
             scaler = GradScaler(enabled=use_amp)
             model.train()
-            train_loss, train_loss_trip, train_loss_ce = train_epoch(train_loader, model, speaker_head, optimizer, gamma, device, use_amp, scaler)
-            run.log({"train_loss": train_loss, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce}, step=epoch)
+            train_loss, train_loss_trip, train_loss_ce, train_loss_adv = train_epoch(train_loader, model, speaker_head, style_head, optimizer, gammas, device, use_amp, scaler, grl_scheduler)
+            run.log({"train_loss": train_loss, "train_loss_trip": train_loss_trip, "train_loss_ce": train_loss_ce, "train_loss_adv": train_loss_adv}, step=epoch)
             model.eval()
             embeddings, speaker_labels, style_labels = generate_embeddings(
                 test_loader=test_loader,
