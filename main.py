@@ -33,10 +33,10 @@ def main(cfg: Config):
     unfreezing_schedule = cfg.training.unfreezing_schedule
     use_amp = cfg.training.use_amp
 
-    # solo_dir = cfg.data.solo_path
-    # whsp_dir = cfg.data.whsp_path
-    solo_dir = '/home/kamil/Datasets/chains/solo'
-    whsp_dir = '/home/kamil/Datasets/chains/whsp'
+    solo_dir = cfg.data.solo_path
+    whsp_dir = cfg.data.whsp_path
+    # solo_dir = '/home/kamil/Datasets/chains/solo'
+    # whsp_dir = '/home/kamil/Datasets/chains/whsp'
     train_ratio = cfg.data.split_ratio
 
     wandb_project = cfg.wandb.project_name
