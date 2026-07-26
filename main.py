@@ -60,7 +60,7 @@ def main(cfg: Config):
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
     model = PostProcessor(model_name).to(device)
-    speaker_head = get_speaker_head(speaker_head_name, 192, len(train_speakers), speaker_head_scale, speaker_head_margin)
+    speaker_head = get_speaker_head(speaker_head_name, 192, len(train_speakers), speaker_head_scale, speaker_head_margin).to(device)
     style_head = GRLStyleClassifier(64).to(device)
 
     model.sv_model.requires_grad_(False)
