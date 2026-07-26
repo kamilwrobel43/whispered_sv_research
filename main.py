@@ -55,9 +55,9 @@ def main(cfg: Config):
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
     model = PostProcessor(model_name).to(device)
-    speaker_head = CosineSoftmax(192, len(train_speakers)).to(device)
+    speaker_head = AAMSoftmax(192, len(train_speakers), scale=30.0, margin=0.2).to(device)
 
-    model.base_model.requires_grad_=False
+    model.base_model.requires_grad_(False)
     
     base_params = list(model.base_model.parameters())
     other_params = [p for p in model.parameters() if id(p) not in {id(x) for x in base_params}]
@@ -81,7 +81,7 @@ def main(cfg: Config):
         n_epochs,
         wandb_project,
         wandb_config,
-        None,
+        unfreezing_schedule,
         use_amp,
         device,
         seed,
