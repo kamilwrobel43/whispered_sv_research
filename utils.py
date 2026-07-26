@@ -9,6 +9,8 @@ from torch.amp import autocast
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
+from model import AAMSoftmax, CosineSoftmax
+
 
 
 
@@ -194,3 +196,9 @@ def test_sv(test_loader, model, mode, seed, device=None):
     result = evaluate_mode(embeddings, speaker_labels, style_labels, mode, seed)
     return result
 
+
+def get_speaker_head(head_name: str, emb_dim: int, n_speakers, scale: float = None, margin: float = None):
+    if head_name == "AAMSoftmax":
+        return AAMSoftmax(emb_dim, n_speakers, scale, margin)
+    if head_name == "CosineSoftmax":
+        return CosineSoftmax(emb_dim, n_speakers, scale)

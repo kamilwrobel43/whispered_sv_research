@@ -57,5 +57,8 @@ training:
       - "linear.weight"
       - "linear.bias"
   device: "cuda"
+  speaker_head_name: "AAMSoftmax"
+  speaker_head_scale: 30.0
+  speaker_head_margin: 0.2
 
   

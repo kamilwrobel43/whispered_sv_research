@@ -39,6 +39,9 @@ class TrainingConfig:
         ],
     })
     device: str = "cuda"
+    speaker_head_name: str = "AAMSofmax"
+    speaker_head_scale: float = 30.0
+    speaker_head_margin: float = 0.2
 
 @dataclass
 class ModelConfig:

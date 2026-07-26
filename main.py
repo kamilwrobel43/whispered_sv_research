@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from training import train_model
 from dataset import ChainsDataset, ChainsDatasetSV
-from utils import split_speakers
+from utils import split_speakers, get_speaker_head
 from model import SVModel, PostProcessor, CosineSoftmax, AAMSoftmax, GRLStyleClassifier, DANNAlphaScheduler
 
 cs = ConfigStore.instance()
@@ -32,6 +32,9 @@ def main(cfg: Config):
     eval_modes = cfg.training.eval_modes
     unfreezing_schedule = cfg.training.unfreezing_schedule
     use_amp = cfg.training.use_amp
+    speaker_head_name = cfg.training.speaker_head_name
+    speaker_head_scale = cfg.training.speaker_head_scale
+    speaker_head_margin = cfg.training.speaker_head_margin
 
     solo_dir = cfg.data.solo_path
     whsp_dir = cfg.data.whsp_path
@@ -57,7 +60,7 @@ def main(cfg: Config):
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
     model = PostProcessor(model_name).to(device)
-    speaker_head = AAMSoftmax(192, len(train_speakers), scale=30.0, margin=0.3).to(device)
+    speaker_head = get_speaker_head(speaker_head_name, 192, len(train_speakers), speaker_head_scale, speaker_head_margin)
     style_head = GRLStyleClassifier(64).to(device)
 
     model.sv_model.requires_grad_(False)
