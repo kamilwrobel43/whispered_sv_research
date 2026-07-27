@@ -55,7 +55,7 @@ def main(cfg: Config):
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
     model = PostProcessor(model_name).to(device)
-    speaker_head = AAMSoftmax(192, len(train_speakers), scale=30.0, margin=0.5).to(device)
+    speaker_head = CosineSoftmax(192, len(train_speakers), scale=30.0).to(device)
 
     model.base_model.requires_grad_(False)
     
