@@ -88,12 +88,12 @@ cs.store(name="base_cfg", node=Config)
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: Config):
-    root_solo = '/home/kamil/Datasets/chains/solo'
-    root_whsp = '/home/kamil/Datasets/chains/whsp'
+    root_solo = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
+    root_whsp = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/whsp/"
     seed = 43
 
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
 
     train_speakers, test_speakers = split_speakers(root_solo, train_ratio=1.0, seed = seed)
     train_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "normal")
