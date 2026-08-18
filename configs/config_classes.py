@@ -55,6 +55,8 @@ class WandbConfig:
 class BaselineConfig:
     model_names: list[str] = field(default_factory=lambda: ["redimnet-b6", "redimnet-b2"])
     results_filename: str = "results.json"
+
+
 @dataclass
 class Config:
     data: DataConfig = field(default_factory=DataConfig)

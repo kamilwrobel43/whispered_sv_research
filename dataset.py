@@ -7,10 +7,9 @@ import soundfile as sf
 seed = 43
 
 class ChainsDatasetSV(Dataset):
-    def __init__(self, root_solo, root_whsp, speaker_dirs):
-        self.root_dir_solo =  root_solo
-        self.root_dir_whsp = root_whsp
-
+    def __init__(self, root_solo, root_whsp, speaker_dirs, mode):
+        main_dir, second_dir, main_label, second_label = (root_solo, root_whsp, 1, 0) if mode != "whisper" else (root_whsp, root_solo, 0, 1)
+        
         self.file_paths = []
         self.speaker_labels = []
         self.labels = []
@@ -20,15 +19,16 @@ class ChainsDatasetSV(Dataset):
         # solo - 0
         # whsp - 1
         for label, speaker in enumerate(speaker_dirs):
-            speaker_dir = os.path.join(self.root_dir_solo, speaker)
+            speaker_dir = os.path.join(main_dir, speaker)
             for file_name in os.listdir(speaker_dir):
                 file_path = os.path.join(speaker_dir, file_name)
                 self.file_paths.append(file_path)
-                self.labels.append(0)
+                self.labels.append(main_label)
                 self.speaker_labels.append(label)
-                self.file_paths.append(os.path.join(self.root_dir_whsp, speaker, file_name))
-                self.labels.append(1)
-                self.speaker_labels.append(label)
+                if mode == "both":
+                    self.file_paths.append(os.path.join(second_dir, speaker, file_name))
+                    self.labels.append(second_label)
+                    self.speaker_labels.append(label)
 
         self.file_paths, self.speaker_labels, self.labels = shuffle(self.file_paths, self.speaker_labels,
                                                                     self.labels, random_state=seed)
