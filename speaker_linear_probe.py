@@ -79,7 +79,10 @@ def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_l
                 if total_test_loss < best_loss:
                     patience = 0
                     best_loss = total_test_loss
-                elif patience==15:
+                else:
+                    patience+=1
+                    
+                if patience==15:
                     break
 
 cs = ConfigStore.instance()
