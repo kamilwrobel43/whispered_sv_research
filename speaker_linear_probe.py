@@ -18,6 +18,7 @@ from configs.config_classes import Config
 
 def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, optimizer, speaker_mode):
     for layer in range(n_layers):
+        torch.nn.init.xavier_uniform_(classifier.weight)
         with wandb.init(project="whispered_sv", config=wandb_config, name=f"speaker_probe_{layer}", reinit=True) as run:
             best_loss = torch.inf
             patience = 0
@@ -25,7 +26,7 @@ def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_l
                 total_train_loss = 0
                 total_correct = 0
                 total_samples = 0
-                model.train()
+                classifier.train()
                 for waveform, speaker_label, style_label in tqdm(train_loader, desc="Training"):
                     batch_size = waveform.size(0)
                     waveform = waveform.to(device)
@@ -48,7 +49,7 @@ def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_l
                 total_train_loss /= total_samples
                 train_accuracy = total_correct / total_samples
 
-                model.eval()
+                classifier.eval()
                 with torch.inference_mode():
 
                     total_test_loss = 0
@@ -81,7 +82,7 @@ def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_l
                     best_loss = total_test_loss
                 else:
                     patience+=1
-                    
+
                 if patience==15:
                     break
 
@@ -103,6 +104,11 @@ def main(cfg: Config):
     test_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "whisper")
 
     model = WavLMModel.from_pretrained("microsoft/wavlm-base").to(device)
+
+    for p in model.parameters():
+        p.requires_grad = False
+    model.eval()
+
     classifier = nn.Linear(768, len(train_speakers)).to(device)
     optimizer = torch.optim.Adam(lr=1e-3, params=classifier.parameters())
 
