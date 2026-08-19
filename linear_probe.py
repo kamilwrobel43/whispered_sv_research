@@ -122,7 +122,10 @@ def main(cfg: Config):
     elif probe_mode == "speaker-normal-normal":
         train_speakers, _ = split_speakers(root_solo, train_ratio=1.0, seed=seed)
         dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "normal")
-        train_dataset, test_dataset = random_split(dataset, split_ratio, seed)
+        train_size = int(split_ratio * len(dataset))
+        val_size = len(dataset) - train_size
+        train_dataset, test_dataset = random_split(dataset, [train_size, val_size])
+        n_classes = len(train_speakers)
         n_classes = len(train_speakers)
         speaker_mode = True
 
