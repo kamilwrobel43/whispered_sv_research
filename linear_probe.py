@@ -101,10 +101,14 @@ def main(cfg: Config):
     probe_mode = cfg.linear_probe.mode
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    
+
     if probe_mode == "speaker-whisper-whisper":
         train_speakers, _ = split_speakers(root_solo, train_ratio=1.0, seed=seed)
         dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "whisper")
-        train_dataset, test_dataset = random_split(dataset, split_ratio, seed)
+        train_size = int(split_ratio * len(dataset))
+        val_size = len(dataset) - train_size
+        train_dataset, test_dataset = random_split(dataset, [train_size, val_size])
         n_classes = len(train_speakers)
         speaker_mode = True
 
