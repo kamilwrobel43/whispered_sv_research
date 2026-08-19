@@ -62,5 +62,9 @@ training:
   speaker_head_margin: 0.2
 
 
+linear_probe:
+  mode: "speaker-whisper-whisper"
+  n_epochs: 20
+  
 
   

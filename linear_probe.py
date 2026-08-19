@@ -2,7 +2,7 @@ import wandb
 import torch
 from tqdm import tqdm
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from transformers import WavLMModel
 
 from dataset import ChainsDatasetSV
@@ -16,9 +16,10 @@ from configs.config_classes import Config
 
 
 
-def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode):
+
+def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim):
     for layer in range(n_layers):
-        torch.nn.init.xavier_uniform_(classifier.weight)
+        classifier = nn.Linear(emb_dim, n_classes).to(device)
         optimizer = torch.optim.Adam(lr=1e-3, params=classifier.parameters())
         with wandb.init(project="whispered_sv", config=wandb_config, name=f"style_probe_{layer}", reinit=True) as run:
             best_loss = torch.inf
@@ -93,16 +94,43 @@ cs.store(name="base_cfg", node=Config)
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: Config):
-    root_solo = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/solo/"
-    root_whsp = "/lustre/pd01/hpc-maggol5711-1768234235/datasets/chains/whsp/"
-    seed = 43
+    root_solo = cfg.data.solo_path
+    root_whsp = cfg.data.whsp_path
+    seed = cfg.training.seed
+    split_ratio = cfg.data.split_ratio
+    probe_mode = cfg.linear_probe.mode
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    if probe_mode == "speaker-whisper-whisper":
+        train_speakers, _ = split_speakers(root_solo, train_ratio=1.0, seed=seed)
+        dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "whisper")
+        train_dataset, test_dataset = random_split(dataset, split_ratio, seed)
+        n_classes = len(train_speakers)
+        speaker_mode = True
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # device = torch.device("cpu")
+    elif probe_mode == "speaker-normal-whisper":
+        train_speakers, _ = split_speakers(root_solo, train_ratio=1.0, seed=seed)
+        train_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "whisper")
+        test_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "normal")
+        n_classes = len(train_speakers)
+        speaker_mode = True
 
-    train_speakers, test_speakers = split_speakers(root_solo, train_ratio=0.7, seed = seed)
-    train_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "both")
-    test_dataset = ChainsDatasetSV(root_solo, root_whsp, test_speakers, mode = "both")
+    elif probe_mode == "speaker-normal-normal":
+        train_speakers, _ = split_speakers(root_solo, train_ratio=1.0, seed=seed)
+        dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "normal")
+        train_dataset, test_dataset = random_split(dataset, split_ratio, seed)
+        n_classes = len(train_speakers)
+        speaker_mode = True
+
+    elif probe_mode == "style":
+        train_speakers, test_speakers = split_speakers(root_solo, train_ratio=split_ratio, seed=seed)
+        train_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "both")
+        test_dataset = ChainsDatasetSV(root_solo, root_whsp, test_speakers, mode = "both")
+        n_classes = 2
+        speaker_mode = False
+
+
+    
 
     model = WavLMModel.from_pretrained("microsoft/wavlm-base").to(device)
 
@@ -110,14 +138,12 @@ def main(cfg: Config):
         p.requires_grad = False
     model.eval()
 
-    classifier = nn.Linear(768, 2).to(device)
-
-    
     train_loader= DataLoader(train_dataset, batch_size = 16, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-    n_epochs = 200
+    n_epochs = cfg.linear_probe.n_epochs
     n_layers = 13
+    emb_dim = 768
 
     wandb_config = {
             "base_model": "wavlm-base",
@@ -126,7 +152,7 @@ def main(cfg: Config):
         }
 
 
-    linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode = False)
+    linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim)
 
 
 if __name__ == "__main__":

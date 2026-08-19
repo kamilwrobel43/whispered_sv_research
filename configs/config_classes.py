@@ -56,6 +56,10 @@ class BaselineConfig:
     model_names: list[str] = field(default_factory=lambda: ["redimnet-b6", "redimnet-b2"])
     results_filename: str = "results.json"
 
+@dataclass
+class LinearProbe:
+    mode: str = "speaker-whisper-whisper"
+    n_epochs: int = 20
 
 @dataclass
 class Config:
@@ -64,3 +68,4 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     baseline: BaselineConfig = field(default_factory=BaselineConfig)
     wandb: WandbConfig = field(default_factory=WandbConfig)
+    linear_probe: LinearProbe = field(default_factory=LinearProbe)
