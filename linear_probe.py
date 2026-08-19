@@ -99,8 +99,8 @@ def main(cfg: Config):
     seed = cfg.training.seed
     split_ratio = cfg.data.split_ratio
     probe_mode = cfg.linear_probe.mode
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     if probe_mode == "speaker-whisper-whisper":
         train_speakers, _ = split_speakers(root_solo, train_ratio=1.0, seed=seed)
         dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "whisper")
