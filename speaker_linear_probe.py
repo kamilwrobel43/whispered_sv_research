@@ -20,7 +20,7 @@ def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_l
     for layer in range(n_layers):
         torch.nn.init.xavier_uniform_(classifier.weight)
         optimizer = torch.optim.Adam(lr=1e-3, params=classifier.parameters())
-        with wandb.init(project="whispered_sv", config=wandb_config, name=f"speaker_probe_{layer}", reinit=True) as run:
+        with wandb.init(project="whispered_sv", config=wandb_config, name=f"style_probe_{layer}", reinit=True) as run:
             best_loss = torch.inf
             patience = 0
             for epoch in range(n_epochs):
@@ -100,9 +100,9 @@ def main(cfg: Config):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu")
 
-    train_speakers, test_speakers = split_speakers(root_solo, train_ratio=1.0, seed = seed)
-    train_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "normal")
-    test_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "whisper")
+    train_speakers, test_speakers = split_speakers(root_solo, train_ratio=0.7, seed = seed)
+    train_dataset = ChainsDatasetSV(root_solo, root_whsp, train_speakers, mode = "both")
+    test_dataset = ChainsDatasetSV(root_solo, root_whsp, test_speakers, mode = "both")
 
     model = WavLMModel.from_pretrained("microsoft/wavlm-base").to(device)
 
@@ -110,7 +110,7 @@ def main(cfg: Config):
         p.requires_grad = False
     model.eval()
 
-    classifier = nn.Linear(768, len(train_speakers)).to(device)
+    classifier = nn.Linear(768, 2).to(device)
 
     
     train_loader= DataLoader(train_dataset, batch_size = 16, shuffle=True)
@@ -126,7 +126,7 @@ def main(cfg: Config):
         }
 
 
-    linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode = True)
+    linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode = False)
 
 
 if __name__ == "__main__":
