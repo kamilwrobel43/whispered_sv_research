@@ -17,11 +17,11 @@ from configs.config_classes import Config
 
 
 
-def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim):
+def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim, probe_mode):
     for layer in range(n_layers):
         classifier = nn.Linear(emb_dim, n_classes).to(device)
         optimizer = torch.optim.Adam(lr=1e-3, params=classifier.parameters())
-        with wandb.init(project="whispered_sv", config=wandb_config, name=f"style_probe_{layer}", reinit=True) as run:
+        with wandb.init(project="whispered_sv", config=wandb_config, name=f"{probe_mode}_probe_{layer}", reinit=True) as run:
             best_loss = torch.inf
             patience = 0
             for epoch in range(n_epochs):
@@ -152,7 +152,7 @@ def main(cfg: Config):
         }
 
 
-    linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim)
+    linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim, probe_mode)
 
 
 if __name__ == "__main__":
