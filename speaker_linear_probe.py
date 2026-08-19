@@ -16,9 +16,10 @@ from configs.config_classes import Config
 
 
 
-def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, optimizer, speaker_mode):
+def linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode):
     for layer in range(n_layers):
         torch.nn.init.xavier_uniform_(classifier.weight)
+        optimizer = torch.optim.Adam(lr=1e-3, params=classifier.parameters())
         with wandb.init(project="whispered_sv", config=wandb_config, name=f"speaker_probe_{layer}", reinit=True) as run:
             best_loss = torch.inf
             patience = 0
@@ -110,7 +111,6 @@ def main(cfg: Config):
     model.eval()
 
     classifier = nn.Linear(768, len(train_speakers)).to(device)
-    optimizer = torch.optim.Adam(lr=1e-3, params=classifier.parameters())
 
     
     train_loader= DataLoader(train_dataset, batch_size = 16, shuffle=True)
@@ -126,7 +126,7 @@ def main(cfg: Config):
         }
 
 
-    linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, optimizer, speaker_mode = True)
+    linear_probe(model, classifier, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode = True)
 
 
 if __name__ == "__main__":
