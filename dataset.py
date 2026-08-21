@@ -7,7 +7,7 @@ import soundfile as sf
 seed = 43
 
 class ChainsDatasetSV(Dataset):
-    def __init__(self, root_solo, root_whsp, speaker_dirs, mode):
+    def __init__(self, root_solo, root_whsp, speaker_dirs, mode, normalization=True):
         main_dir, second_dir, main_label, second_label = (root_solo, root_whsp, 1, 0) if mode != "whisper" else (root_whsp, root_solo, 0, 1)
         
         self.file_paths = []
@@ -15,6 +15,7 @@ class ChainsDatasetSV(Dataset):
         self.labels = []
         self.target_sr = 16000
         self.target_len_s = 4
+        self.normalization = normalization
 
         # solo - 0
         # whsp - 1
@@ -36,22 +37,27 @@ class ChainsDatasetSV(Dataset):
         return len(self.file_paths)
 
     def __load_file__(self, path):
-
         speech, sr = sf.read(path)
         waveform = torch.from_numpy(speech).float()
         if waveform.ndim == 1:
             waveform = waveform.unsqueeze(0)
         else:
             waveform = waveform.t()
-        # Sample to desired target rate
+
         if sr != self.target_sr:
             waveform = torchaudio.functional.resample(waveform, orig_freq=sr, new_freq=self.target_sr)
-        # Convert to mono
+
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
         elif waveform.ndim == 1:
             waveform = waveform.unsqueeze(0)
-        # Cut/pad to desired length
+
+        if self.normalization:
+            target_rms = 0.1  # arbitrary fixed reference level, just needs to be consistent
+            current_rms = waveform.pow(2).mean().sqrt()
+            waveform = waveform * (target_rms / (current_rms + 1e-8))
+        
+
         target_len = self.target_len_s * self.target_sr
         if waveform.size(1) < target_len:
             waveform = torch.nn.functional.pad(waveform, (0, target_len - waveform.size(1)))
@@ -72,7 +78,7 @@ class ChainsDatasetSV(Dataset):
 
 
 class ChainsDataset(Dataset):
-    def __init__(self, root_solo, root_whsp,  speaker_dirs):
+    def __init__(self, root_solo, root_whsp,  speaker_dirs, normalization=True):
         self.root_dir_solo = root_solo
         self.root_dir_whsp = root_whsp
 
@@ -81,7 +87,7 @@ class ChainsDataset(Dataset):
         self.labels = []
         self.target_sr = 16000
         self.target_len_s = 4
-
+        self.normalization = normalization
 
         for label, speaker in enumerate(speaker_dirs):
             speaker_dir = os.path.join(self.root_dir_solo, speaker)
@@ -99,22 +105,27 @@ class ChainsDataset(Dataset):
         return len(self.file_paths_solo)
 
     def __load_file__(self, path):
-        import soundfile as sf
         speech, sr = sf.read(path)
         waveform = torch.from_numpy(speech).float()
         if waveform.ndim == 1:
             waveform = waveform.unsqueeze(0)
         else:
             waveform = waveform.t()
-        # Sample to desired target rate
+
         if sr != self.target_sr:
             waveform = torchaudio.functional.resample(waveform, orig_freq=sr, new_freq=self.target_sr)
-        # Convert to mono
+
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
         elif waveform.ndim == 1:
             waveform = waveform.unsqueeze(0)
-        # Cut/pad to desired length
+
+        if self.normalization:
+            target_rms = 0.1  # arbitrary fixed reference level, just needs to be consistent
+            current_rms = waveform.pow(2).mean().sqrt()
+            waveform = waveform * (target_rms / (current_rms + 1e-8))
+        # --------------------------------
+
         target_len = self.target_len_s * self.target_sr
         if waveform.size(1) < target_len:
             waveform = torch.nn.functional.pad(waveform, (0, target_len - waveform.size(1)))
