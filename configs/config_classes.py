@@ -60,6 +60,7 @@ class BaselineConfig:
 class LinearProbe:
     mode: str = "speaker-whisper-whisper"
     n_epochs: int = 20
+    model_name: str = "wavlm-base"
 
 @dataclass
 class Config:

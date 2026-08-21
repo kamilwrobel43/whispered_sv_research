@@ -14,14 +14,11 @@ from configs.config_classes import Config
 
 
 
-
-
-
-def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim, probe_mode):
+def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim, probe_mode, model_name):
     for layer in range(n_layers):
         classifier = nn.Linear(emb_dim, n_classes).to(device)
         optimizer = torch.optim.Adam(lr=1e-3, params=classifier.parameters())
-        with wandb.init(project="whispered_sv", config=wandb_config, name=f"{probe_mode}_probe_{layer}", reinit=True) as run:
+        with wandb.init(project="whispered_sv", config=wandb_config, name=f"{probe_mode}_probe_{model_name}_{layer}", reinit=True) as run:
             best_loss = torch.inf
             patience = 0
             for epoch in range(n_epochs):
@@ -33,9 +30,12 @@ def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epo
                     batch_size = waveform.size(0)
                     waveform = waveform.to(device)
                     label = speaker_label.to(device).long() if speaker_mode else style_label.to(device).long()
-                    outputs = model(input_values = waveform, output_hidden_states=True)
 
-                    features = outputs.hidden_states[layer].mean(dim=1)
+                    if model_name == "wavlm-base":
+                        outputs = model(input_values = waveform, output_hidden_states=True)
+                        features = outputs.hidden_states[layer].mean(dim=1)
+                    else:
+                        features = model(waveform)
 
                     logits = classifier(features)
                     loss = torch.nn.functional.cross_entropy(logits, label)
@@ -64,7 +64,7 @@ def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epo
                         label = speaker_label.to(device).long() if speaker_mode else style_label.to(device).long()
                         outputs = model(input_values = waveform, output_hidden_states=True)
 
-                        features = outputs.hidden_states[layer].mean(dim=1)
+                        features = outputs.hidden_states[layerwavlm].mean(dim=1)
 
                         logits = classifier(features)
                         loss = torch.nn.functional.cross_entropy(logits, label)
@@ -99,7 +99,10 @@ def main(cfg: Config):
     seed = cfg.training.seed
     split_ratio = cfg.data.split_ratio
     probe_mode = cfg.linear_probe.mode
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model_name = cfg.linear_probe.model_name
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    n_epochs = cfg.linear_probe.n_epochs
 
     
 
@@ -138,8 +141,17 @@ def main(cfg: Config):
 
 
     
-
-    model = WavLMModel.from_pretrained("microsoft/wavlm-base").to(device)
+    if model_name == "wavlm-base":
+        model = WavLMModel.from_pretrained("microsoft/wavlm-base").to(device)
+        emb_dim = 768
+        n_layers = 13
+    elif model_name == "redimnet-b6":
+        model = torch.hub.load('IDRnD/ReDimNet', 'ReDimNet', 
+                               model_name="b6", 
+                               train_type="ft_lm", 
+                               dataset="vox2").to(device)
+        emb_dim = 192
+        n_layers = 1
 
     for p in model.parameters():
         p.requires_grad = False
@@ -148,18 +160,16 @@ def main(cfg: Config):
     train_loader= DataLoader(train_dataset, batch_size = 16, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-    n_epochs = cfg.linear_probe.n_epochs
-    n_layers = 13
-    emb_dim = 768
+
 
     wandb_config = {
-            "base_model": "wavlm-base",
+            "base_model": model_name,
             "batch_size": 16,
             "lr": 1e-3,
         }
 
 
-    linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim, probe_mode)
+    linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epochs, device, speaker_mode, n_classes, emb_dim, probe_mode, model_name)
 
 
 if __name__ == "__main__":

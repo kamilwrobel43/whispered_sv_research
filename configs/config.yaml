@@ -65,6 +65,7 @@ training:
 linear_probe:
   mode: "speaker-whisper-whisper"
   n_epochs: 20
+  model_name: "wavlm-base"
   
 
   
