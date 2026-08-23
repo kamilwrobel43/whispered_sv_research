@@ -35,7 +35,7 @@ def train_epoch_no_triplet(train_loader: DataLoader, model: nn.Module, speaker_h
             loss_adv = F.cross_entropy(style_logits, style_label)
 
             emb_dec = model.decode(emb_enc, emb)
-            speaker_logits = speaker_head(emb_dec)
+            speaker_logits = speaker_head(emb_dec, speaker_label)
             loss_ce = F.cross_entropy(speaker_logits, speaker_label)
 
             loss = gammas[0]*loss_ce + gammas[1]*loss_adv
