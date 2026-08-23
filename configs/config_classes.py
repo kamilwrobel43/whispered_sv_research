@@ -16,7 +16,7 @@ class TrainingConfig:
     lr_ft: float = 1e-5
     weight_decay: float = 1e-4
     seed: int = 43
-    gamma: float = 1e-4
+    gammas: tuple[float] = (1e-4, 0.5)
     use_amp: bool = True
     eval_modes: list[str] = field(default_factory=lambda: ["neutral-neutral", "neutral-whisper", "whisper-whisper", "all"])
     unfreezing_schedule: dict[int, list[str]] = field(default_factory=lambda: {
@@ -38,6 +38,10 @@ class TrainingConfig:
             "linear.bias",
         ],
     })
+    device: str = "cuda"
+    speaker_head_name: str = "AAMSofmax"
+    speaker_head_scale: float = 30.0
+    speaker_head_margin: float = 0.2
 
 @dataclass
 class ModelConfig:
@@ -51,6 +55,13 @@ class WandbConfig:
 class BaselineConfig:
     model_names: list[str] = field(default_factory=lambda: ["redimnet-b6", "redimnet-b2"])
     results_filename: str = "results.json"
+
+@dataclass
+class LinearProbe:
+    mode: str = "speaker-whisper-whisper"
+    n_epochs: int = 20
+    model_name: str = "wavlm-base"
+
 @dataclass
 class Config:
     data: DataConfig = field(default_factory=DataConfig)
@@ -58,3 +69,4 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     baseline: BaselineConfig = field(default_factory=BaselineConfig)
     wandb: WandbConfig = field(default_factory=WandbConfig)
+    linear_probe: LinearProbe = field(default_factory=LinearProbe)

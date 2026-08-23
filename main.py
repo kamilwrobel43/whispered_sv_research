@@ -7,8 +7,8 @@ from torch.utils.data import DataLoader
 
 from training import train_model
 from dataset import ChainsDataset, ChainsDatasetSV
-from utils import split_speakers
-from model import SVModel, PostProcessor, CosineSoftmax, AAMSoftmax
+from utils import split_speakers, get_speaker_head
+from model import SVModel, PostProcessor, CosineSoftmax, AAMSoftmax, GRLStyleClassifier, DANNAlphaScheduler
 
 cs = ConfigStore.instance()
 cs.store(name="base_cfg", node=Config)
@@ -16,7 +16,7 @@ cs.store(name="base_cfg", node=Config)
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(cfg: Config):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(cfg.training.device)
 
     
 
@@ -28,13 +28,18 @@ def main(cfg: Config):
     weight_decay = cfg.training.weight_decay
     optimizer_name = cfg.training.optimizer
     seed = cfg.training.seed
-    gamma = cfg.training.gamma
+    gammas = tuple(cfg.training.gammas)
     eval_modes = cfg.training.eval_modes
     unfreezing_schedule = cfg.training.unfreezing_schedule
     use_amp = cfg.training.use_amp
+    speaker_head_name = cfg.training.speaker_head_name
+    speaker_head_scale = cfg.training.speaker_head_scale
+    speaker_head_margin = cfg.training.speaker_head_margin
 
     solo_dir = cfg.data.solo_path
     whsp_dir = cfg.data.whsp_path
+    # solo_dir = '/home/kamil/Datasets/chains/solo'
+    # whsp_dir = '/home/kamil/Datasets/chains/whsp'
     train_ratio = cfg.data.split_ratio
 
     wandb_project = cfg.wandb.project_name
@@ -42,7 +47,7 @@ def main(cfg: Config):
     wandb_config = {
         "base_model": model_name,
         "batch_size": batch_size,
-        "gamma": gamma,
+        "gammas": gammas,
         "lr": lr,
         "weight_decay": weight_decay
     }
@@ -55,28 +60,33 @@ def main(cfg: Config):
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
     model = PostProcessor(model_name).to(device)
-    speaker_head = CosineSoftmax(192, len(train_speakers), scale=30.0).to(device)
+    speaker_head = get_speaker_head(speaker_head_name, 192, len(train_speakers), speaker_head_scale, speaker_head_margin).to(device)
+    style_head = GRLStyleClassifier(64).to(device)
 
-    model.base_model.requires_grad_(False)
+    model.sv_model.requires_grad_(False)
     
-    base_params = list(model.base_model.parameters())
+    base_params = list(model.sv_model.parameters())
     other_params = [p for p in model.parameters() if id(p) not in {id(x) for x in base_params}]
 
     optimizer = torch.optim.Adam([
         {"params": other_params, "lr": lr},
         {"params": base_params, "lr": lr_ft},
         {"params": speaker_head.parameters(), "lr": lr},
+        {"params": style_head.parameters(), "lr": lr}
     ], weight_decay=weight_decay)
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs)
+    total_steps = n_epochs * len(train_loader)
+    grl_scheduler = DANNAlphaScheduler(total_steps)
     
     train_model(
         train_loader,
         test_loader,
         model,
         speaker_head,
+        style_head,
         optimizer,
-        gamma,
+        gammas,
         eval_modes,
         n_epochs,
         wandb_project,
@@ -86,6 +96,7 @@ def main(cfg: Config):
         device,
         seed,
         scheduler,
+        grl_scheduler
     )
 
     torch.save(model.state_dict(), "model.pth")

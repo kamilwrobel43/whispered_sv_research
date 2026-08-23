@@ -9,6 +9,8 @@ from torch.amp import autocast
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
 
+from model import AAMSoftmax, CosineSoftmax
+
 
 
 
@@ -27,9 +29,9 @@ def split_speakers(root_dir='', train_ratio=0.6, seed=43):
 
 
 
-def sample_triplets(solo_batch, whsp_batch, labels, model):
-    anchors = model(solo_batch)    # shape: [batch_size, embedding_dim]
-    positives = model(whsp_batch)  # shape: [batch_size, embedding_dim]
+def sample_triplets(solo_batch, solo_res, whsp_batch, whsp_res, labels, model):
+    anchors = model.decode(solo_batch, solo_res)    # shape: [batch_size, embedding_dim]
+    positives = model.decode(whsp_batch, whsp_res)  # shape: [batch_size, embedding_dim]
 
     batch_size = labels.size(0)
 
@@ -194,3 +196,9 @@ def test_sv(test_loader, model, mode, seed, device=None):
     result = evaluate_mode(embeddings, speaker_labels, style_labels, mode, seed)
     return result
 
+
+def get_speaker_head(head_name: str, emb_dim: int, n_speakers, scale: float = None, margin: float = None):
+    if head_name == "AAMSoftmax":
+        return AAMSoftmax(emb_dim, n_speakers, scale, margin)
+    if head_name == "CosineSoftmax":
+        return CosineSoftmax(emb_dim, n_speakers, scale)
