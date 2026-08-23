@@ -100,8 +100,8 @@ def main(cfg: Config):
     split_ratio = cfg.data.split_ratio
     probe_mode = cfg.linear_probe.mode
     model_name = cfg.linear_probe.model_name
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
     n_epochs = cfg.linear_probe.n_epochs
 
     
