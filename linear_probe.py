@@ -62,9 +62,12 @@ def linear_probe(model, train_loader, test_loader, wandb_config, n_layers, n_epo
                         waveform = waveform.to(device)
                         batch_size = waveform.size(0)
                         label = speaker_label.to(device).long() if speaker_mode else style_label.to(device).long()
-                        outputs = model(input_values = waveform, output_hidden_states=True)
 
-                        features = outputs.hidden_states[layerwavlm].mean(dim=1)
+                        if model_name == "wavlm-base":
+                            outputs = model(input_values = waveform, output_hidden_states=True)
+                            features = outputs.hidden_states[layer].mean(dim=1)
+                        else:
+                            features = model(waveform)
 
                         logits = classifier(features)
                         loss = torch.nn.functional.cross_entropy(logits, label)
