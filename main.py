@@ -5,7 +5,7 @@ from configs.config_classes import Config
 import torch
 from torch.utils.data import DataLoader
 
-from training import train_model
+from training import train_model, train_model_no_triplet
 from dataset import ChainsDataset, ChainsDatasetSV
 from utils import split_speakers, get_speaker_head
 from model import SVModel, PostProcessor, CosineSoftmax, AAMSoftmax, GRLStyleClassifier, DANNAlphaScheduler
@@ -38,8 +38,6 @@ def main(cfg: Config):
 
     solo_dir = cfg.data.solo_path
     whsp_dir = cfg.data.whsp_path
-    # solo_dir = '/home/kamil/Datasets/chains/solo'
-    # whsp_dir = '/home/kamil/Datasets/chains/whsp'
     train_ratio = cfg.data.split_ratio
 
     wandb_project = cfg.wandb.project_name
@@ -53,8 +51,8 @@ def main(cfg: Config):
     }
 
     train_speakers, test_speakers = split_speakers(root_dir=solo_dir, train_ratio=train_ratio, seed=seed)
-    train_dataset = ChainsDataset(solo_dir, whsp_dir, train_speakers)
-    test_dataset = ChainsDatasetSV(solo_dir, whsp_dir, test_speakers)
+    train_dataset = ChainsDatasetSV(solo_dir, whsp_dir, train_speakers, mode="both")
+    test_dataset = ChainsDatasetSV(solo_dir, whsp_dir, test_speakers, mode="both")
 
     train_loader = DataLoader(train_dataset, batch_size, shuffle=True, pin_memory=True, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False, pin_memory=True, num_workers=4)
@@ -79,7 +77,7 @@ def main(cfg: Config):
     total_steps = n_epochs * len(train_loader)
     grl_scheduler = DANNAlphaScheduler(total_steps)
     
-    train_model(
+    train_model_no_triplet(
         train_loader,
         test_loader,
         model,
