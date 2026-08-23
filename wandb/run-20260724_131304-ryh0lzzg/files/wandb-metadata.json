@@ -1,0 +1,43 @@
+{
+  "os": "Linux-7.0.11-76070011-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.12.3",
+  "startedAt": "2026-07-24T11:13:04.547017Z",
+  "args": [
+    "training.device=cpu"
+  ],
+  "program": "/home/kamil/Projects/whispered_sv_research/main.py",
+  "codePath": "main.py",
+  "codePathLocal": "main.py",
+  "git": {
+    "remote": "git@github.com:kamilwrobel43/whispered_sv_research.git",
+    "commit": "2e6064e98dc6007ae865a55b446f3792faf0dc6e"
+  },
+  "email": "284252@student.pwr.edu.pl",
+  "root": "/home/kamil/Projects/whispered_sv_research",
+  "host": "pop-os",
+  "executable": "/home/kamil/Projects/whispered_sv_research/.venv/bin/python3",
+  "cpu_count": 6,
+  "cpu_count_logical": 12,
+  "gpu": "Quadro RTX 3000",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "493408342016",
+      "used": "46830227456"
+    }
+  },
+  "memory": {
+    "total": "67011489792"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Quadro RTX 3000",
+      "memoryTotal": "6442450944",
+      "cudaCores": 1920,
+      "architecture": "Turing",
+      "uuid": "GPU-777060a6-432a-80b8-6c12-0a50c13cabf7"
+    }
+  ],
+  "cudaVersion": "13.0",
+  "writerId": "k5sakibcrlir4gq6fv1sg5m41whos5m6"
+}
